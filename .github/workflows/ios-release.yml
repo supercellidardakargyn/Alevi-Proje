@@ -1,0 +1,127 @@
+name: iOS release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (ör. 1.2.3)'
+        required: true
+        type: string
+  push:
+    tags: ['ios-v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: iOS signing preflight
+    runs-on: macos-14
+    steps:
+      - name: Require Apple signing secrets
+        env:
+          P12_B64: ${{ secrets.IOS_DISTRIBUTION_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_P12_PASSWORD }}
+          PROFILE_B64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+          API_KEY_B64: ${{ secrets.APPSTORE_API_PRIVATE_KEY_BASE64 }}
+          TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=()
+          [[ -n "$P12_B64" ]] || missing+=(IOS_DISTRIBUTION_P12_BASE64)
+          [[ -n "$P12_PASSWORD" ]] || missing+=(IOS_DISTRIBUTION_P12_PASSWORD)
+          [[ -n "$PROFILE_B64" ]] || missing+=(IOS_PROVISIONING_PROFILE_BASE64)
+          [[ -n "$KEY_ID" ]] || missing+=(APPSTORE_API_KEY_ID)
+          [[ -n "$ISSUER_ID" ]] || missing+=(APPSTORE_API_ISSUER_ID)
+          [[ -n "$API_KEY_B64" ]] || missing+=(APPSTORE_API_PRIVATE_KEY_BASE64)
+          [[ -n "$TEAM_ID" ]] || missing+=(IOS_TEAM_ID)
+          if (( ${#missing[@]} )); then
+            printf '::error::iOS release secret eksik: %s\n' "${missing[*]}"
+            echo 'Apple signing secret''ı yok; archive/IPA veya sahte artifact üretilmeyecek.'
+            exit 1
+          fi
+
+  build:
+    name: Build signed iOS archive and IPA
+    needs: preflight
+    runs-on: macos-14
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Require Flutter client and iOS project
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ -f apps/client/pubspec.yaml ]] || { echo '::error::apps/client/pubspec.yaml bulunamadı.'; exit 1; }
+          [[ -d apps/client/ios ]] || { echo '::error::apps/client/ios bulunamadı; iOS kaynakları olmadan release durduruldu.'; exit 1; }
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Setup temporary keychain and profile
+        env:
+          P12_B64: ${{ secrets.IOS_DISTRIBUTION_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_P12_PASSWORD }}
+          PROFILE_B64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          KEYCHAIN="$RUNNER_TEMP/alevi-signing.keychain-db"
+          PROFILE="$RUNNER_TEMP/alevi.mobileprovision"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          printf '%s' "$P12_B64" | base64 --decode > "$RUNNER_TEMP/dist.p12"
+          printf '%s' "$PROFILE_B64" | base64 --decode > "$PROFILE"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/dist.p12" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security list-keychain -d user -s "$KEYCHAIN"
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp "$PROFILE" "$HOME/Library/MobileDevice/Provisioning Profiles/alevi.mobileprovision"
+          echo "IOS_KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"
+
+      - name: Build IPA
+        working-directory: apps/client
+        env:
+          IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+        run: flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
+
+      - name: Verify real IPA
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          ipas=(apps/client/build/ios/ipa/*.ipa)
+          (( ${#ipas[@]} == 1 )) || { echo '::error::Tek ve gerçek IPA bekleniyordu.'; exit 1; }
+          test -s "${ipas[0]}"
+          shasum -a 256 "${ipas[0]}" | tee "$RUNNER_TEMP/ios-ipa.sha256"
+
+      - name: Upload signed IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa-${{ github.sha }}
+          path: |
+            apps/client/build/ios/ipa/*.ipa
+            ${{ runner.temp }}/ios-ipa.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Cleanup signing files
+        if: always()
+        shell: bash
+        run: |
+          security delete-keychain "$IOS_KEYCHAIN" || true
+          rm -f "$RUNNER_TEMP/dist.p12" "$RUNNER_TEMP/alevi.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/alevi.mobileprovision"

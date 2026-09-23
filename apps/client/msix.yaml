@@ -1,0 +1,15 @@
+# Run from apps/client after `flutter pub get`:
+# dart run msix:create --build-windows
+# Add the msix package only when Windows packaging is enabled in CI.
+
+msix_config:
+  display_name: Alevi
+  publisher_display_name: Alevi Community
+  identity_name: com.alevi.client
+  msix_version: 0.1.0.0
+  logo_path: assets/store/app_icon.png
+  capabilities: internetClient
+  certificate_path: signing/windows/alevi-dev.pfx
+  certificate_password: CHANGE_ME
+  store: true
+  install_certificate: false

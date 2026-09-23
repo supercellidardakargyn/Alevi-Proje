@@ -1,0 +1,1 @@
+Run `./generate-mesh-certs.sh` (or `./generate-mesh-certs.ps1` on Windows) before starting the node compose profile. Generated keys are development-only and must not be committed or used in production. Production certificates should be issued by the organization's CA and mounted read-only as `ca.crt`, `node.crt`, and `node.key`.

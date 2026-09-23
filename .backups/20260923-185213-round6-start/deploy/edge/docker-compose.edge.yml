@@ -1,0 +1,71 @@
+name: alevi-edge
+
+# YAN SUNUCU: disariya port ACMAZ. API yalnizca ana sunucudan
+# (overlay ag / Tailscale / WireGuard uzerinden) erisilir.
+# Mesh 9443 sadece overlay interface'e bind edilir.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-alevi}
+      POSTGRES_USER: ${POSTGRES_USER:-alevi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_edge_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_edge_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ../..
+      dockerfile: services/api/Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-alevi}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-alevi}?schema=public
+      REDIS_URL: redis://redis:6379
+      REDIS_REQUIRED: "true"
+      MESH_ENABLED: "true"
+      MESH_NODE_ID: ${MESH_NODE_ID:?set MESH_NODE_ID}
+      MESH_HOST: 0.0.0.0
+      MESH_PORT: 25763
+      MESH_JOIN_SECRET: ${MESH_JOIN_SECRET:?set MESH_JOIN_SECRET}
+      MESH_PEERS: ${MESH_PEERS:?set MESH_PEERS}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://sonalis.com.tr}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET}
+      SENSITIVE_DATA_KEY: ${SENSITIVE_DATA_KEY:?set SENSITIVE_DATA_KEY}
+      MESH_CA_FILE: /run/secrets/mesh/ca.crt
+      MESH_CERT_FILE: /run/secrets/mesh/node.crt
+      MESH_KEY_FILE: /run/secrets/mesh/node.key
+    command: ["sh", "-c", "npm run prisma:migrate && node dist/src/server.js"]
+    volumes:
+      - ./certs/generated:/run/secrets/mesh:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    # NOT: ports yayinlanmaz. Gerekirse yalnizca overlay IP'ye bind et:
+    # ports:
+    #   - "10.0.0.5:9443:9443"
+
+volumes:
+  postgres_edge_data:
+  redis_edge_data:

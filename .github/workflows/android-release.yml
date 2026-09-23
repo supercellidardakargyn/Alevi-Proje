@@ -1,0 +1,134 @@
+name: Android release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (ör. 1.2.3+45)'
+        required: true
+        type: string
+  push:
+    tags: ['android-v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FLUTTER_CHANNEL: stable
+
+jobs:
+  preflight:
+    name: Android signing preflight
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require signing and Play secrets
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          PLAY_SERVICE_ACCOUNT: ${{ secrets.GPLAY_SERVICE_ACCOUNT_JSON }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=()
+          [[ -n "$KEYSTORE_B64" ]] || missing+=(ANDROID_KEYSTORE_BASE64)
+          [[ -n "$KEYSTORE_PASSWORD" ]] || missing+=(ANDROID_KEYSTORE_PASSWORD)
+          [[ -n "$KEY_ALIAS" ]] || missing+=(ANDROID_KEY_ALIAS)
+          [[ -n "$KEY_PASSWORD" ]] || missing+=(ANDROID_KEY_PASSWORD)
+          [[ -n "$PLAY_SERVICE_ACCOUNT" ]] || missing+=(GPLAY_SERVICE_ACCOUNT_JSON)
+          if (( ${#missing[@]} )); then
+            printf '::error::Android release secret eksik: %s\n' "${missing[*]}"
+            echo 'İmzalama secret''ı yok; sahte artifact üretilmeyecek.'
+            exit 1
+          fi
+
+  build:
+    name: Build signed Android App Bundle
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Require Flutter client
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f apps/client/pubspec.yaml ]]; then
+            echo '::error::apps/client/pubspec.yaml bulunamadı; gerçek Flutter kaynakları olmadan release durduruldu.'
+            exit 1
+          fi
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Decode keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$RUNNER_TEMP/android-signing"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/android-signing/release.keystore"
+          test -s "$RUNNER_TEMP/android-signing/release.keystore"
+
+      - name: Write signing properties
+        env:
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          cat > apps/client/android/key.properties <<EOF
+          storeFile=$RUNNER_TEMP/android-signing/release.keystore
+          storePassword=$STORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+
+      - name: Build AAB
+        working-directory: apps/client
+        run: flutter build appbundle --release
+
+      - name: Verify real artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          bundles=(apps/client/build/app/outputs/bundle/release/*.aab)
+          (( ${#bundles[@]} == 1 )) || { echo '::error::Tek ve gerçek AAB bekleniyordu.'; exit 1; }
+          test -s "${bundles[0]}"
+          sha256sum "${bundles[0]}" | tee "$RUNNER_TEMP/android-aab.sha256"
+
+      - name: Upload signed AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-aab-${{ github.sha }}
+          path: |
+            apps/client/build/app/outputs/bundle/release/*.aab
+            ${{ runner.temp }}/android-aab.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Cleanup signing files
+        if: always()
+        shell: bash
+        run: rm -f apps/client/android/key.properties "$RUNNER_TEMP/android-signing/release.keystore"

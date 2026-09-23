@@ -1,0 +1,18 @@
+Alevi — Google Play listing placeholder
+
+Short description:
+Güvenli bağlantılar, topluluklar ve gerçek sohbetler.
+
+Full description:
+Alevi; ortak ilgi alanları, güvenli mesajlaşma ve samimi topluluklar üzerinden yeni bağlantılar keşfetmeni sağlar.
+
+Content rating:
+18+ (dating/social discovery; final rating questionnaire required)
+
+Required before publishing:
+- Final app icon and feature graphic
+- Privacy policy URL
+- Data safety form
+- Screenshots for phone/tablet
+- Production API_BASE_URL
+- Release signing key

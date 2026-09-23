@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alevi Connect — Demo</title>
+<style>
+  :root { color-scheme: light; --wine: #7a2231; --bg: #faf7f4; --card: #fff; --line: #e8e0d8; }
+  * { box-sizing: border-box; } body { margin: 0; font-family: system-ui, "Segoe UI", sans-serif; background: var(--bg); color: #2b2320; }
+  header { background: var(--wine); color: #fff; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; }
+  header small { opacity: .8; } main { max-width: 960px; margin: 0 auto; padding: 20px; display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .card h2 { margin: 0 0 10px; font-size: 16px; } .full { grid-column: 1 / -1; }
+  input, textarea, button { font: inherit; } input, textarea { width: 100%; padding: 8px 10px; margin: 4px 0 8px; border: 1px solid var(--line); border-radius: 8px; }
+  button { background: var(--wine); color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+  button.ghost { background: #eee5dc; color: #2b2320; } ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+  li { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 14px; }
+  li small { color: #8a7a70; } #status { font-size: 13px; }
+  @media (max-width: 720px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header><div><strong>alevi connect</strong> <small>demo istemci · standalone API</small></div><div id="status">Bağlantı bekleniyor…</div></header>
+<main>
+  <section class="card">
+    <h2>1 · Kayıt / Giriş</h2>
+    <input id="email" type="email" placeholder="e-posta" value="demo1@alevi.local">
+    <input id="password" type="password" placeholder="şifre (12+ karakter)" value="Demo-Sifre-1234!">
+    <input id="displayName" type="text" placeholder="görünen ad (kayıt için)" value="Demo Bir">
+    <button id="btnRegister">Kayıt ol</button>
+    <button id="btnLogin" class="ghost">Giriş yap</button>
+    <ul id="me"></ul>
+  </section>
+  <section class="card">
+    <h2>2 · Keşfet &amp; Aktif kullanıcılar</h2>
+    <button id="btnRefresh">Yenile</button>
+    <h2 style="margin-top:12px">Keşfet</h2><ul id="discover"></ul>
+    <h2 style="margin-top:12px">Şu an aktif</h2><ul id="active"></ul>
+  </section>
+  <section class="card">
+    <h2>3 · Topluluk akışı</h2>
+    <textarea id="postBody" rows="2" placeholder="Topluluğa bir şey yaz…"></textarea>
+    <button id="btnPost">Paylaş</button>
+    <ul id="posts"></ul>
+  </section>
+  <section class="card">
+    <h2>4 · Mesajlar</h2>
+    <input id="msgTo" type="text" placeholder="alıcı kullanıcı id">
+    <textarea id="msgBody" rows="2" placeholder="mesaj…"></textarea>
+    <button id="btnSend">Gönder</button>
+    <ul id="msgs"></ul>
+  </section>
+  <section class="card full"><small>API: <code id="apiBase"></code> · token tarayıcı belleğinde (değişkende) tutulur, kalıcı depolamada saklanmaz. Üretimde HTTPS + gerçek kimlik doğrulama gerekir.</small></section>
+</main>
+<script>
+const apiBase = location.origin;
+document.getElementById("apiBase").textContent = apiBase;
+let token = null;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+async function call(path, opts = {}) {
+  const res = await fetch(apiBase + path, { ...opts, headers: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}), ...(opts.headers || {}) } });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body?.error?.message || ("HTTP " + res.status));
+  return body;
+}
+function setStatus(t) { $("status").textContent = t; }
+$("btnRegister").onclick = async () => {
+  try {
+    const r = await call("/v1/auth/register", { method: "POST", body: JSON.stringify({ email: $("email").value, password: $("password").value, displayName: $("displayName").value }) });
+    token = r.data.accessToken; setStatus("Kayıtlı: " + r.data.user.displayName); await refreshAll();
+  } catch (e) { setStatus("Hata: " + e.message); }
+};
+$("btnLogin").onclick = async () => {
+  try {
+    const r = await call("/v1/auth/login", { method: "POST", body: JSON.stringify({ email: $("email").value, password: $("password").value }) });
+    token = r.data.accessToken; setStatus("Giriş: " + r.data.user.displayName); await refreshAll();
+  } catch (e) { setStatus("Hata: " + e.message); }
+};
+$("btnRefresh").onclick = refreshAll;
+$("btnPost").onclick = async () => {
+  try { await call("/v1/community/posts", { method: "POST", body: JSON.stringify({ body: $("postBody").value }) }); $("postBody").value = ""; await loadPosts(); }
+  catch (e) { setStatus("Hata: " + e.message); }
+};
+$("btnSend").onclick = async () => {
+  try { await call("/v1/messages", { method: "POST", body: JSON.stringify({ userId: $("msgTo").value.trim(), body: $("msgBody").value }) }); $("msgBody").value = ""; await loadMsgs(); }
+  catch (e) { setStatus("Hata: " + e.message); }
+};
+async function refreshAll() {
+  if (!token) { setStatus("Önce kayıt/giriş yap"); return; }
+  try {
+    await call("/v1/presence/heartbeat", { method: "POST", body: "{}" });
+    const [me, d, a] = await Promise.all([call("/v1/profile/me"), call("/v1/discover"), call("/v1/presence/active")]);
+    $("me").innerHTML = `<li>${esc(me.data.displayName)} <small>${esc(me.data.id)}</small></li>`;
+    $("discover").innerHTML = d.data.items.map((u) => `<li>${esc(u.displayName)} <small>${esc(u.id)}</small></li>`).join("") || "<li><small>Keşfedilecek kullanıcı yok</small></li>";
+    $("active").innerHTML = a.data.map((u) => `<li>${esc(u.displayName)}</li>`).join("") || "<li><small>Şu an aktif kimse yok</small></li>";
+    await loadPosts(); await loadMsgs(); setStatus("Bağlı: " + me.data.displayName);
+  } catch (e) { setStatus("Hata: " + e.message); }
+}
+async function loadPosts() {
+  const p = await call("/v1/community/posts");
+  $("posts").innerHTML = p.data.map((x) => `<li><strong>${esc(x.author?.displayName)}</strong> — ${esc(x.body)}<br><small>${esc(x.createdAt)}</small></li>`).join("") || "<li><small>Henüz gönderi yok</small></li>";
+}
+async function loadMsgs() {
+  const m = await call("/v1/messages");
+  $("msgs").innerHTML = m.data.map((x) => `<li><small>${esc(x.from)} → ${esc(x.to)}</small><br>${esc(x.body)}</li>`).join("") || "<li><small>Mesaj yok</small></li>";
+}
+fetch(apiBase + "/health/live").then(() => setStatus("API çevrimiçi — kayıt/giriş yap")).catch(() => setStatus("API'ye ulaşılamadı"));
+</script>
+</body>
+</html>

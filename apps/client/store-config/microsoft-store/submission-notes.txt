@@ -1,0 +1,12 @@
+Alevi — Microsoft Store submission placeholder
+
+App name: Alevi
+Identity name: com.alevi.client
+Category: Social
+Age guidance: Adults / 18+
+
+Required before publishing:
+- Signed MSIX generated from msix.yaml
+- Store association values from Partner Center
+- Store icon, screenshots, and privacy policy URL
+- Production API endpoint configured through dart-define

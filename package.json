@@ -1,0 +1,19 @@
+{
+  "name": "alevi-connect",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.15.5",
+  "scripts": {
+    "dev:api": "pnpm --filter @alevi/api dev",
+    "build:api": "pnpm --filter @alevi/api build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "db:generate": "pnpm --filter @alevi/api prisma:generate",
+    "db:migrate": "pnpm --filter @alevi/api prisma:migrate",
+    "mesh:init": "powershell -ExecutionPolicy Bypass -File scripts/mesh-init.ps1",
+    "mesh:join": "powershell -ExecutionPolicy Bypass -File scripts/mesh-join.ps1",
+    "compose:single": "docker compose -f deploy/docker-compose.single.yml up -d",
+    "compose:node": "docker compose -f deploy/docker-compose.node.yml up -d"
+  }
+}

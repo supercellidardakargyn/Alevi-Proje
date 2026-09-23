@@ -1,0 +1,59 @@
+name: alevi-single
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-alevi}
+      POSTGRES_USER: ${POSTGRES_USER:-alevi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ..
+      dockerfile: services/api/Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-alevi}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-alevi}?schema=public
+      REDIS_URL: redis://redis:6379
+      REDIS_REQUIRED: "true"
+      MESH_ENABLED: "false"
+      CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER:-alevi-connect}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-alevi-mobile}
+      SENSITIVE_DATA_KEY: ${SENSITIVE_DATA_KEY:?set SENSITIVE_DATA_KEY}
+    command: ["sh", "-c", "npm run prisma:migrate && node dist/src/server.js"]
+    ports:
+      - "${API_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

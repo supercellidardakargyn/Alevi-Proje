@@ -1,0 +1,3 @@
+module.exports=[52139,a=>{"use strict";var b=a.i(87682);a.s(["default",0,function({error:a,reset:c}){return(0,b.jsx)("div",{className:"admin-shell",children:(0,b.jsx)("main",{className:"main-content",children:(0,b.jsx)("div",{className:"content-wrap",children:(0,b.jsxs)("div",{className:"api-alert error",role:"alert",children:[(0,b.jsx)("strong",{children:"Panel yüklenemedi"}),(0,b.jsx)("span",{children:a.message||"Beklenmeyen bir hata oluştu."}),(0,b.jsx)("button",{type:"button",onClick:()=>c(),children:"Tekrar dene"})]})})})})}])}];
+
+//# sourceMappingURL=apps_admin_app_error_tsx_0s7abnu._.js.map

@@ -1,0 +1,125 @@
+name: Windows Store release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (ör. 1.2.3.0)'
+        required: true
+        type: string
+  push:
+    tags: ['windows-v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-store-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Windows Store signing preflight
+    runs-on: windows-2022
+    steps:
+      - name: Require Store identity and signing secrets
+        shell: pwsh
+        env:
+          PFX_B64: ${{ secrets.WINDOWS_SIGNING_PFX_BASE64 }}
+          PFX_PASSWORD: ${{ secrets.WINDOWS_SIGNING_PFX_PASSWORD }}
+          PUBLISHER: ${{ secrets.WINDOWS_PUBLISHER }}
+          IDENTITY: ${{ secrets.WINDOWS_IDENTITY_NAME }}
+        run: |
+          $missing = @()
+          if ([string]::IsNullOrWhiteSpace($env:PFX_B64)) { $missing += 'WINDOWS_SIGNING_PFX_BASE64' }
+          if ([string]::IsNullOrWhiteSpace($env:PFX_PASSWORD)) { $missing += 'WINDOWS_SIGNING_PFX_PASSWORD' }
+          if ([string]::IsNullOrWhiteSpace($env:PUBLISHER)) { $missing += 'WINDOWS_PUBLISHER' }
+          if ([string]::IsNullOrWhiteSpace($env:IDENTITY)) { $missing += 'WINDOWS_IDENTITY_NAME' }
+          if ($missing.Count -gt 0) {
+            Write-Error ("Windows Store release secret eksik: " + ($missing -join ', '))
+            Write-Error 'Signing secret yok; sahte MSIX veya placeholder artifact üretilmeyecek.'
+            exit 1
+          }
+
+  build:
+    name: Build signed Windows MSIX
+    needs: preflight
+    runs-on: windows-2022
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Require Flutter Windows client
+        shell: pwsh
+        run: |
+          if (-not (Test-Path 'apps/client/pubspec.yaml')) {
+            Write-Error 'apps/client/pubspec.yaml bulunamadı; gerçek Flutter kaynakları olmadan release durduruldu.'
+            exit 1
+          }
+          if (-not (Test-Path 'apps/client/windows')) {
+            Write-Error 'apps/client/windows bulunamadı; Windows Store release durduruldu.'
+            exit 1
+          }
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Setup signing certificate
+        shell: pwsh
+        env:
+          PFX_B64: ${{ secrets.WINDOWS_SIGNING_PFX_BASE64 }}
+          PFX_PASSWORD: ${{ secrets.WINDOWS_SIGNING_PFX_PASSWORD }}
+        run: |
+          $pfxPath = Join-Path $env:RUNNER_TEMP 'alevi-signing.pfx'
+          [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:PFX_B64))
+          $secure = ConvertTo-SecureString $env:PFX_PASSWORD -AsPlainText -Force
+          $certificate = Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation Cert:\CurrentUser\My -Password $secure
+          if (-not $certificate) { throw 'PFX sertifikası import edilemedi.' }
+          "WINDOWS_CERT_THUMBPRINT=$($certificate.Thumbprint)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "WINDOWS_PFX_PATH=$pfxPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Build Windows
+        working-directory: apps/client
+        shell: pwsh
+        run: flutter build windows --release
+
+      - name: Build MSIX
+        working-directory: apps/client
+        shell: pwsh
+        env:
+          WINDOWS_PUBLISHER: ${{ secrets.WINDOWS_PUBLISHER }}
+          WINDOWS_IDENTITY_NAME: ${{ secrets.WINDOWS_IDENTITY_NAME }}
+        run: |
+          if (-not (Test-Path 'pubspec.yaml')) { throw 'Flutter project yok.' }
+          dart run msix:create --build-windows false
+
+      - name: Verify real MSIX
+        shell: pwsh
+        run: |
+          $packages = @(Get-ChildItem -Path 'apps/client' -Recurse -Filter '*.msix' -File)
+          if ($packages.Count -ne 1 -or $packages[0].Length -le 0) {
+            Write-Error 'Tek ve gerçek MSIX bekleniyordu; placeholder artifact kabul edilmez.'
+            exit 1
+          }
+          (Get-FileHash $packages[0].FullName -Algorithm SHA256).Hash | Out-File (Join-Path $env:RUNNER_TEMP 'windows-msix.sha256')
+
+      - name: Upload signed MSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msix-${{ github.sha }}
+          path: |
+            apps/client/**/*.msix
+            ${{ runner.temp }}/windows-msix.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Cleanup signing certificate
+        if: always()
+        shell: pwsh
+        run: |
+          if ($env:WINDOWS_CERT_THUMBPRINT) { Remove-Item "Cert:\CurrentUser\My\$env:WINDOWS_CERT_THUMBPRINT" -Force -ErrorAction SilentlyContinue }
+          if ($env:WINDOWS_PFX_PATH) { Remove-Item $env:WINDOWS_PFX_PATH -Force -ErrorAction SilentlyContinue }

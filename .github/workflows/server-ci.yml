@@ -1,0 +1,103 @@
+name: Server CI
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'services/**'
+      - 'packages/**'
+      - 'deploy/**'
+      - '.github/workflows/server-ci.yml'
+  pull_request:
+    paths:
+      - 'services/**'
+      - 'packages/**'
+      - 'deploy/**'
+      - '.github/workflows/server-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: server-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: API lint, typecheck and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Require API source and lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f services/api/package.json ]]; then
+            echo "::error::services/api/package.json bulunamadı; server CI sahte başarı üretmeden durduruldu."
+            exit 1
+          fi
+          if [[ ! -f services/api/pnpm-lock.yaml && ! -f pnpm-lock.yaml && ! -f services/api/package-lock.json ]]; then
+            echo "::error::API dependency lockfile bulunamadı; tekrarlanabilir build için lockfile gerekir."
+            exit 1
+          fi
+          if [[ ! -f packages/config/package-lock.json || ! -f packages/contracts/package-lock.json ]]; then
+            echo "::error::Shared package lockfile'ları eksik."
+            exit 1
+          fi
+
+      - name: Install shared dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --prefix packages/config
+          npm ci --prefix packages/contracts
+
+      - name: Install API dependencies
+        working-directory: services/api
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f pnpm-lock.yaml ]]; then
+            pnpm install --frozen-lockfile
+          elif [[ -f package-lock.json ]]; then
+            npm ci
+          elif [[ -f ../../pnpm-lock.yaml ]]; then
+            pnpm --dir ../.. install --frozen-lockfile
+          fi
+
+      - name: Lint
+        working-directory: services/api
+        run: pnpm run lint --if-present
+
+      - name: Typecheck
+        working-directory: services/api
+        run: pnpm run typecheck --if-present
+
+      - name: Unit and integration tests
+        working-directory: services/api
+        run: pnpm test --if-present -- --ci
+
+      - name: Dependency audit
+        working-directory: services/api
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f pnpm-lock.yaml ]]; then
+            pnpm audit --audit-level=high
+          else
+            npm audit --audit-level=high
+          fi

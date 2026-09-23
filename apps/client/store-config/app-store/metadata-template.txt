@@ -1,0 +1,21 @@
+Alevi — App Store metadata placeholder
+
+Subtitle:
+Güvenli bağlar, gerçek sohbetler.
+
+Promotional text:
+Ortak ilgi alanlarını keşfet, topluluğa katıl ve yeni bir sohbet başlat.
+
+Description:
+Alevi, yetişkinler için güvenlik ve kontrolü merkeze alan bir bağlantı ve topluluk deneyimidir.
+
+Age rating:
+17+ (final questionnaire required)
+
+Required before publishing:
+- Privacy policy URL
+- App privacy nutrition labels
+- Support URL
+- Marketing URL
+- App Store screenshots and icon
+- Production entitlements and signing
