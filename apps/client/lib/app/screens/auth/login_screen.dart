@@ -40,6 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLogin = true;
   bool _obscurePassword = true;
   bool _ageConfirmed = false;
+  bool _kvkkConfirmed = false;
   bool _googleBusy = false;
   bool _submitBusy = false;
 
@@ -60,6 +61,12 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       return;
     }
+    if (!_isLogin && !_kvkkConfirmed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kayıt için KVKK aydınlatma metnini onaylaman gerekli.')),
+      );
+      return;
+    }
     if (_submitBusy) return;
     setState(() => _submitBusy = true);
     try {
@@ -75,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
           'email': email,
           'password': password,
           'displayName': _nameController.text.trim().isEmpty ? email.split('@').first : _nameController.text.trim(),
-          'consentVersion': 'v1',
+          'consentVersion': 'kvkk-v1',
           'ageConfirmed': true,
           if (_inviteController.text.trim().isNotEmpty) 'inviteCode': _inviteController.text.trim(),
         },);
@@ -138,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final res = await widget.apiClient.post('/v1/auth/google', body: {
         'idToken': idToken,
         'displayName': _nameController.text.trim().isEmpty ? null : _nameController.text.trim(),
-        'consentVersion': 'v1',
+        'consentVersion': 'kvkk-v1',
         'ageConfirmed': true,
       },);
       await _saveSession(res);
@@ -248,6 +255,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   title: const Text('18 yaşından büyük olduğumu onaylıyorum.'),
                   controlAffinity: ListTileControlAffinity.leading,
                 ),
+                if (!_isLogin)
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _kvkkConfirmed,
+                    onChanged: (value) => setState(() => _kvkkConfirmed = value ?? false),
+                    title: const Text('KVKK aydınlatma metnini okudum, verilerimin işlenmesini kabul ediyorum.'),
+                    subtitle: TextButton(
+                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                      onPressed: () => _showKvkk(context),
+                      child: const Text('Metni oku'),
+                    ),
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
                 if (_isLogin)
                   Align(
                     alignment: Alignment.centerRight,
@@ -307,6 +327,35 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         ),
         ),
+        ),
+      ),
+    );
+  }
+
+  void _showKvkk(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.7,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        builder: (_, controller) => SingleChildScrollView(
+          controller: controller,
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('KVKK Aydınlatma Metni (özet)', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+              SizedBox(height: 12),
+              Text(
+                'Veri sorumlusu: sonalis.com.tr. E-posta, görünen ad, profil bilgileri ve kullanım verilerin; hesap işletimi, güvenlik ve moderasyon amacıyla işlenir. Dini/kültürel alanlar isteğe bağlıdır, şifreli saklanır ve keşfette kullanılmaz. Verilerin satılmaz, reklamcılarla paylaşılmaz. Erişim, düzeltme ve silme için kvkk@sonalis.com.tr adresine yazabilir, hesabını uygulamadan silebilirsin. Tam metin: sonalis.com.tr/gizlilik.html',
+                style: TextStyle(color: AppColors.muted, height: 1.5),
+              ),
+            ],
+          ),
         ),
       ),
     );

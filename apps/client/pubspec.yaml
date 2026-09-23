@@ -22,8 +22,27 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.4
+  image: ^4.5.4
 
 flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/icon/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/icon/can-icon.png
+  adaptive_icon_background: "#4D1228"
+  adaptive_icon_foreground: assets/icon/can-icon-fg.png
+  windows:
+    generate: true
+    image_path: assets/icon/can-icon.png
+    icon_size: 256
+  web:
+    generate: true
+    image_path: assets/icon/can-icon.png
+    background_color: "#4D1228"
+    theme_color: "#4D1228"

@@ -7,6 +7,7 @@ import 'screens/auth/verify_screen.dart';
 import 'screens/main_shell.dart';
 import 'services/api_client.dart';
 import 'services/secure_storage.dart';
+import 'services/session.dart';
 import 'theme/app_theme.dart';
 
 class AleviApp extends StatelessWidget {
@@ -67,10 +68,38 @@ class _AppEntryState extends State<AppEntry> {
   }
 
   Future<void> _restore() async {
-    final done = await widget.storage.read(key: 'onboarding_done');
+    final seen = await widget.storage.read(key: 'onboarding_done');
+    String? token;
+    try {
+      token = await widget.storage.read(key: 'access_token');
+    } catch (_) {
+      token = null;
+    }
+    if (!mounted) return;
+    if (token != null && token.isNotEmpty) {
+      // Kayitli oturum varsa dogrula; gecerliyse dogrudan iceri al.
+      try {
+        await widget.apiClient.setAccessToken(token);
+        final me = await widget.apiClient.get('/v1/profile/me');
+        final data = me['data'];
+        if (data is Map) {
+          Session.currentUserId = (data['id'] ?? '').toString().isEmpty ? null : data['id'].toString();
+          Session.accessToken = token;
+          setState(() {
+            _showOnboarding = false;
+            _showLogin = false;
+            _ready = true;
+          });
+          return;
+        }
+      } catch (_) {
+        await widget.apiClient.setAccessToken(null);
+        Session.clear();
+      }
+    }
     if (!mounted) return;
     setState(() {
-      _showOnboarding = done != 'true';
+      _showOnboarding = seen != 'true';
       _ready = true;
     });
   }
