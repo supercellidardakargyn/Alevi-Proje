@@ -65,12 +65,14 @@ process.env.NODE_ENV = 'production';
 if (!process.env.PORT) process.env.PORT = '3000';
 
 const children = [];
+let updating = false;
 function run(name, command, args, options) {
   const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'], ...options });
   children.push(child);
   child.stdout.on('data', (data) => process.stdout.write(`[${name}] ${data}`));
   child.stderr.on('data', (data) => process.stderr.write(`[${name}] ${data}`));
   child.on('exit', (code) => {
+    if (updating) return;
     console.error(`[${name}] cikti (kod ${code}). Kapatiliyor...`);
     shutdown(1);
   });
@@ -128,48 +130,176 @@ function ensureDeps(label, dir, opts) {
 // 0) Bagimliliklar (sunucular Linux oldugu icin burada kurulur)
 // file: baglantilar symlink oldugundan paylasilan paketlerin de kendi
 // node_modules'u olmali (zod), yoksa API `Cannot find module` ile coker.
-ensureDeps('config', path.join(ROOT, 'packages/config'), { lock: false, sentinel: 'zod' });
-ensureDeps('contracts', path.join(ROOT, 'packages/contracts'), { lock: false, sentinel: 'zod' });
-ensureDeps('api', path.join(ROOT, 'services/api'), { lock: true, sentinel: 'zod' });
-ensureDeps('gateway', path.join(ROOT, 'services/gateway'), { lock: true, sentinel: 'express' });
-ensureDeps('admin', path.join(ROOT, 'admin-standalone'), { lock: false, sentinel: 'next' });
+function installAllDeps() {
+  ensureDeps('config', path.join(ROOT, 'packages/config'), { lock: false, sentinel: 'zod' });
+  ensureDeps('contracts', path.join(ROOT, 'packages/contracts'), { lock: false, sentinel: 'zod' });
+  ensureDeps('api', path.join(ROOT, 'services/api'), { lock: true, sentinel: 'zod' });
+  ensureDeps('gateway', path.join(ROOT, 'services/gateway'), { lock: true, sentinel: 'express' });
+  ensureDeps('admin', path.join(ROOT, 'admin-standalone'), { lock: false, sentinel: 'next' });
+}
+installAllDeps();
 
 // 1) Veritabani semasi
-console.log('[kurulum] veritabani migration calistiriliyor...');
-const migrate = spawnSync(
-  process.execPath,
-  ['node_modules/prisma/build/index.js', 'migrate', 'deploy', '--schema', 'prisma/schema.prisma'],
-  { cwd: path.join(ROOT, 'services/api'), env: process.env, stdio: 'inherit' }
-);
-if (migrate.status !== 0) {
-  console.error('[hata] migration basarisiz. DATABASE_URL degerini kontrol edin.');
-  console.error('[ipucu] Yari kalmis migration varsa: services/api/node_modules/prisma/build/index.js migrate resolve --applied "<ad>"');
-  process.exit(1);
+function runMigrations() {
+  console.log('[kurulum] veritabani migration calistiriliyor...');
+  const migrate = spawnSync(
+    process.execPath,
+    ['node_modules/prisma/build/index.js', 'migrate', 'deploy', '--schema', 'prisma/schema.prisma'],
+    { cwd: path.join(ROOT, 'services/api'), env: process.env, stdio: 'inherit' }
+  );
+  if (migrate.status !== 0) {
+    console.error('[hata] migration basarisiz. DATABASE_URL degerini kontrol edin.');
+    console.error('[ipucu] Yari kalmis migration varsa: services/api/node_modules/prisma/build/index.js migrate resolve --applied "<ad>"');
+    process.exit(1);
+  }
+}
+runMigrations();
+
+// 2-4) Servisler
+function bootChildren() {
+  run('api', process.execPath, ['dist/src/server.js'], {
+    cwd: path.join(ROOT, 'services/api'),
+    env: process.env
+  });
+  run('admin', process.execPath, ['server.js'], {
+    cwd: path.join(ROOT, 'admin-standalone'),
+    env: { ...process.env, PORT: '3001' }
+  });
+  run('gateway', process.execPath, ['index.js'], {
+    cwd: path.join(ROOT, 'services/gateway'),
+    env: {
+      ...process.env,
+      PORT: process.env.GATEWAY_PORT || '25577',
+      SITE_DIR: path.join(ROOT, 'site'),
+      API_UPSTREAM: 'http://127.0.0.1:3000',
+      ADMIN_UPSTREAM: 'http://127.0.0.1:3001'
+    }
+  });
 }
 
-// 2) API
-run('api', process.execPath, ['dist/src/server.js'], {
-  cwd: path.join(ROOT, 'services/api'),
-  env: process.env
-});
-
-// 3) Admin paneli (standalone)
-run('admin', process.execPath, ['server.js'], {
-  cwd: path.join(ROOT, 'admin-standalone'),
-  env: { ...process.env, PORT: '3001' }
-});
-
-// 4) Gateway (dis port .env'deki GATEWAY_PORT, varsayilan 25577)
-run('gateway', process.execPath, ['index.js'], {
-  cwd: path.join(ROOT, 'services/gateway'),
-  env: {
-    ...process.env,
-    PORT: process.env.GATEWAY_PORT || '25577',
-    SITE_DIR: path.join(ROOT, 'site'),
-    API_UPSTREAM: 'http://127.0.0.1:3000',
-    ADMIN_UPSTREAM: 'http://127.0.0.1:3001'
+function stopChildren() {
+  for (const child of children.splice(0)) {
+    try {
+      child.kill('SIGTERM');
+    } catch {
+      // Zaten kapanmis olabilir.
+    }
   }
-});
+}
+bootChildren();
 
 console.log(`[ok] api=:3000 admin=:3001 gateway=:${process.env.GATEWAY_PORT || '25577'} — kapatmak icin Ctrl+C`);
 console.log('[not] tek komutla calisir; arka planda tutmak icin ornek: npm i -g pm2 && pm2 start index.js --name alevi');
+
+startAutoUpdate();
+
+// --- Otomatik guncelleme -------------------------------------------------
+// AUTO_UPDATE=1 ise GitHub `latest` release 10 dakikada bir kontrol edilir.
+// Yeni surum varsa indirilir, acilir, bagimliliklar tazelenir, migration
+// calisir ve servisler ana process kapanmadan yeniden baslatilir.
+// .env ve uploads/ korunur. Paneldeki sabit komut degismez.
+const UPDATE_REPO = process.env.UPDATE_REPO || 'supercellidardakargyn/Alevi-Proje';
+const UPDATE_ASSET = 'alevi-main.tar.gz';
+const UPDATE_CHECK_MS = Number(process.env.UPDATE_CHECK_MS || 600_000);
+const UPDATE_STATE_FILE = path.join(ROOT, '.update-state.json');
+
+function readUpdateState() {
+  try {
+    return JSON.parse(fs.readFileSync(UPDATE_STATE_FILE, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function writeUpdateState(state) {
+  try {
+    fs.writeFileSync(UPDATE_STATE_FILE, JSON.stringify(state), { mode: 0o600 });
+  } catch {
+    // Guncelleme durumu yazilamazsa bir sonraki tur tekrar dener.
+  }
+}
+
+async function githubJson(url) {
+  const response = await fetch(url, {
+    headers: { 'user-agent': 'alevi-updater', accept: 'application/vnd.github+json' },
+    signal: AbortSignal.timeout(20_000)
+  });
+  if (!response.ok) throw new Error(`GitHub yanıtı: ${response.status}`);
+  return response.json();
+}
+
+async function checkForUpdate() {
+  if (process.env.AUTO_UPDATE !== '1') return;
+  try {
+    const release = await githubJson(`https://api.github.com/repos/${UPDATE_REPO}/releases/tags/latest`);
+    const state = readUpdateState();
+    if (state.releaseId === release.id) return;
+    const asset = (release.assets || []).find((entry) => entry.name === UPDATE_ASSET);
+    if (!asset) {
+      console.error('[guncelle] release bulundu ama paket yok, atlaniyor.');
+      return;
+    }
+    console.log(`[guncelle] yeni surum: ${release.tag_name || release.id}, indiriliyor...`);
+    await applyUpdate(asset);
+    writeUpdateState({ releaseId: release.id, at: new Date().toISOString() });
+    console.log('[guncelle] tamam, servisler yeni surumle baslatildi.');
+  } catch (error) {
+    console.error(`[guncelle] kontrol basarisiz, 10 dk sonra tekrar: ${(error && error.message) || error}`);
+  }
+}
+
+async function applyUpdate(asset) {
+  const tmpFile = path.join(ROOT, '.update-pending.tgz');
+  const download = await fetch(asset.url, {
+    headers: { 'user-agent': 'alevi-updater', accept: 'application/octet-stream' },
+    signal: AbortSignal.timeout(120_000)
+  });
+  if (!download.ok || !download.body) throw new Error(`Indirme basarisiz: ${download.status}`);
+  const file = fs.createWriteStream(tmpFile, { mode: 0o600 });
+  await new Promise((resolve, reject) => {
+    download.body.pipe(file);
+    download.body.on('error', reject);
+    file.on('finish', resolve);
+    file.on('error', reject);
+  });
+  updating = true;
+  stopChildren();
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+  const extract = spawnSync('tar', ['-xzf', tmpFile, '-C', ROOT, '--strip-components=1'], { stdio: 'inherit' });
+  fs.rmSync(tmpFile, { force: true });
+  if (extract.status !== 0) {
+    console.error('[guncelle] acma basarisiz, eski surumle devam icin yeniden baslatin.');
+    updating = false;
+    bootChildren();
+    return;
+  }
+  // Bagimlilik degismis olabilir: kilit dosyasina gore taze kurulum.
+  for (const dir of [
+    path.join(ROOT, 'services/api/node_modules'),
+    path.join(ROOT, 'services/gateway/node_modules'),
+    path.join(ROOT, 'admin-standalone/node_modules'),
+    path.join(ROOT, 'packages/config/node_modules'),
+    path.join(ROOT, 'packages/contracts/node_modules')
+  ]) {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+  installAllDeps();
+  runMigrations();
+  bootChildren();
+  updating = false;
+}
+
+function startAutoUpdate() {
+  if (process.env.AUTO_UPDATE !== '1') {
+    console.log('[guncelle] kapali (acmak icin .env: AUTO_UPDATE=1)');
+    return;
+  }
+  console.log(`[guncelle] acik: ${UPDATE_REPO} her 10 dakikada kontrol edilecek.`);
+  const timer = setInterval(() => {
+    void checkForUpdate();
+  }, Number.isFinite(UPDATE_CHECK_MS) && UPDATE_CHECK_MS > 0 ? UPDATE_CHECK_MS : 600_000);
+  timer.unref?.();
+  setTimeout(() => {
+    void checkForUpdate();
+  }, 30_000).unref?.();
+}

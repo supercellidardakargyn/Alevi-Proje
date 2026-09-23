@@ -1,0 +1,44 @@
+name: release-tars
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: shared paketleri derle
+        run: |
+          npm --prefix packages/config install --no-audit --no-fund
+          npm --prefix packages/config run build
+          npm --prefix packages/contracts install --no-audit --no-fund
+          npm --prefix packages/contracts run build
+      - name: api derle
+        run: |
+          npm --prefix services/api install --no-audit --no-fund
+          npm --prefix services/api run build
+      - name: admin derle
+        run: |
+          npm --prefix apps/admin install --no-audit --no-fund
+          npm --prefix apps/admin run build
+      - name: gateway bagimlilik kilidi
+        run: npm --prefix services/gateway install --no-audit --no-fund
+      - name: testler
+        run: npm --prefix services/api test
+      - name: paketleri hazirla
+        shell: pwsh
+        run: ./scripts/prepare-bundles.ps1
+      - name: latest release guncelle
+        uses: ncipollo/release-action@v1
+        with:
+          tag: latest
+          name: latest
+          allowUpdates: true
+          removeArtifacts: true
+          replacesArtifacts: true
+          artifacts: dist/alevi-main.tar.gz,dist/alevi-edge.tar.gz,dist/SHA256SUMS.txt
