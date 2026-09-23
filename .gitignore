@@ -2,6 +2,8 @@ node_modules/
 .pnpm-store/
 dist/
 build/
+.next/
+.backups/
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
@@ -16,6 +18,8 @@ build/
 *.pfx
 *.jks
 *.keystore
+*.tar.gz
+*.apk
 android/key.properties
 android/app/*.jks
 ios/Runner/*.mobileprovision

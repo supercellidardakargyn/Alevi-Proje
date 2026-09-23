@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://sonalis.com.tr/sitemap.xml

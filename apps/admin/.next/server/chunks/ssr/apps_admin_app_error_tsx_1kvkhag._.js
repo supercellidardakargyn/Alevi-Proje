@@ -1,3 +1,0 @@
-module.exports=[14011,a=>{"use strict";a.s(["default",()=>b]);let b=(0,a.i(42028).registerClientReference)(function(){throw Error("Attempted to call the default export of [project]/apps/admin/app/error.tsx from the server, but it's on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component.")},"[project]/apps/admin/app/error.tsx","default")},22685,a=>{"use strict";var b=a.i(14011);a.n(b)},60217,function(a){a.n(a.i(22685))}];
-
-//# sourceMappingURL=apps_admin_app_error_tsx_1kvkhag._.js.map

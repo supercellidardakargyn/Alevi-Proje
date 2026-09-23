@@ -1,3 +1,0 @@
-module.exports=[80406,a=>{"use strict";var b=a.i(62418);a.s(["default",0,function({children:a}){return(0,b.jsx)("html",{lang:"tr",children:(0,b.jsx)("body",{children:a})})},"metadata",0,{title:"Can Meydanı Operasyon Merkezi",description:"Kullanıcı, moderasyon, içerik ve mesh sağlık yönetimi",robots:{index:!1,follow:!1}},"viewport",0,{width:"device-width",initialScale:1,themeColor:"#531827"}])},37594,function(a){a.n(a.i(80406))}];
-
-//# sourceMappingURL=apps_admin_app_layout_tsx_0nd093f._.js.map

@@ -1,3 +1,0 @@
-module.exports=[96228,a=>{"use strict";var b=a.i(62418);a.s(["default",0,function(){return(0,b.jsx)("div",{className:"admin-shell",children:(0,b.jsx)("main",{className:"main-content",children:(0,b.jsx)("div",{className:"content-wrap",children:(0,b.jsxs)("div",{className:"empty-state",role:"status",children:[(0,b.jsx)("span",{className:"empty-symbol","aria-hidden":"true",children:"◌"}),(0,b.jsx)("strong",{children:"Sayfa bulunamadı"}),(0,b.jsx)("span",{children:"Aradığınız yönetim bölümü mevcut değil."})]})})})})}])},5163,function(a){a.n(a.i(96228))}];
-
-//# sourceMappingURL=apps_admin_app_not-found_tsx_02--_6-._.js.map
