@@ -38,7 +38,11 @@ $apiFiles = @{
 $main = Join-Path $bundles 'alevi-main'
 $mainFiles = $apiFiles.Clone()
 $mainFiles['deploy/node-main/index.js'] = 'index.js'
-$mainFiles['deploy/gateway/.env'] = '.env'
+if (Test-Path -LiteralPath (Join-Root 'deploy/gateway/.env')) {
+  $mainFiles['deploy/gateway/.env'] = '.env'
+} else {
+  $mainFiles['deploy/gateway/.env.example'] = '.env'
+}
 $mainFiles['deploy/KURULUM-NODE.md'] = 'KURULUM.md'
 $mainFiles['site'] = 'site'
 $mainFiles['services/gateway/package.json'] = 'services/gateway/package.json'
@@ -60,7 +64,11 @@ Get-ChildItem -LiteralPath (Join-Path $main 'services/api/dist') -Recurse -File 
 $edge = Join-Path $bundles 'alevi-edge'
 $edgeFiles = $apiFiles.Clone()
 $edgeFiles['deploy/node-edge/index.js'] = 'index.js'
-$edgeFiles['deploy/edge/.env'] = '.env'
+if (Test-Path -LiteralPath (Join-Root 'deploy/edge/.env')) {
+  $edgeFiles['deploy/edge/.env'] = '.env'
+} else {
+  $edgeFiles['deploy/edge/.env.example'] = '.env'
+}
 $edgeFiles['deploy/KURULUM-NODE.md'] = 'KURULUM.md'
 Stage-Tree $edge $edgeFiles
 Get-ChildItem -LiteralPath (Join-Path $edge 'services/api/dist') -Recurse -File |
