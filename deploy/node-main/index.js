@@ -215,8 +215,6 @@ bootChildren();
 console.log(`[ok] api=:3000 admin=:3001 gateway=:${process.env.GATEWAY_PORT || '25577'} — kapatmak icin Ctrl+C`);
 console.log('[not] tek komutla calisir; arka planda tutmak icin ornek: npm i -g pm2 && pm2 start index.js --name alevi');
 
-startAutoUpdate();
-
 // --- Otomatik guncelleme -------------------------------------------------
 // AUTO_UPDATE=1 ise GitHub `latest` release 10 dakikada bir kontrol edilir.
 // Yeni surum varsa indirilir, acilir, bagimliliklar tazelenir, migration
@@ -327,3 +325,5 @@ function startAutoUpdate() {
     void checkForUpdate();
   }, 30_000).unref?.();
 }
+
+startAutoUpdate();
