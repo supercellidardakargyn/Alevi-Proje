@@ -41,6 +41,30 @@ function loadEnv(file) {
 
 loadEnv(path.join(ROOT, '.env'));
 
+function readEnvFileValue(key) {
+  try {
+    for (const rawLine of fs.readFileSync(path.join(ROOT, '.env'), 'utf8').split('\n')) {
+      const line = rawLine.replace(/\r$/, '').trim();
+      if (!line || line.startsWith('#')) continue;
+      const index = line.indexOf('=');
+      if (index === -1) continue;
+      if (line.slice(0, index).trim() === key) return line.slice(index + 1).trim();
+    }
+  } catch {
+    // .env okunamazsa ortam degiskeniyle devam edilir.
+  }
+  return undefined;
+}
+
+function isAutoUpdateEnabled() {
+  // Panel degiskeni .env'i ezebilir; ikisinden biri aciksa acik sayilir.
+  const values = [process.env.AUTO_UPDATE, readEnvFileValue('AUTO_UPDATE')];
+  return values.some((value) => {
+    const normalized = String(value ?? '').trim().toLowerCase();
+    return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on';
+  });
+}
+
 const REQUIRED_KEYS = [
   ['DATABASE_URL', 'Supabase/Neon Postgres connection string'],
   ['JWT_ACCESS_SECRET', 'openssl rand -hex 32'],
@@ -290,7 +314,7 @@ async function applyUpdate(asset) {
 }
 
 function startAutoUpdate() {
-  if (process.env.AUTO_UPDATE !== '1') {
+  if (!isAutoUpdateEnabled()) {
     console.log('[guncelle] kapali (acmak icin .env: AUTO_UPDATE=1)');
     return;
   }
