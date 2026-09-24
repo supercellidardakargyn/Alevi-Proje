@@ -78,9 +78,14 @@ class _AppEntryState extends State<AppEntry> {
     if (!mounted) return;
     if (token != null && token.isNotEmpty) {
       // Kayitli oturum varsa dogrula; gecerliyse dogrudan iceri al.
+      // Access suresi dolmussa refresh ile canlandirip tekrar dene.
       try {
         await widget.apiClient.setAccessToken(token);
-        final me = await widget.apiClient.get('/v1/profile/me');
+        var me = await widget.apiClient.get('/v1/profile/me');
+        if (me['data'] is! Map) {
+          final renewed = await widget.apiClient.refreshSession();
+          if (renewed) me = await widget.apiClient.get('/v1/profile/me');
+        }
         final data = me['data'];
         if (data is Map) {
           Session.currentUserId = (data['id'] ?? '').toString().isEmpty ? null : data['id'].toString();

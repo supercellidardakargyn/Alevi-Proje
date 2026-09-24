@@ -39,14 +39,11 @@ veya systemd/pm2 (istege bagli).
    IP'sini yazip ana sunucuyu yeniden baslat (Ctrl+C → `node index.js`).
    Alternatif: yonetim panelindeki **Sunucular** bölümünden ekle.
 
-## Otomatik güncelleme (isteğe bağlı)
+## Güncelleme (elle)
 
-`node index.js` 10 dakikada bir GitHub `latest` paketine bakar
-(`AUTO_UPDATE=1` ise). Yeni sürümde indirir, açar, migration kurar ve
-servisleri ana process kapanmadan yeniden başlatır. `.env` ve yüklenen
-fotoğraflar korunur. Açmak için `.env` dosyasına `AUTO_UPDATE=1` yazıp
-yeniden başlatın. Paketler her `main` push'unda otomatik üretilir
-(`.github/workflows/release-tars.yml`).
+Otomatik güncelleme yoktur. Yeni sürümde masaüstündeki yeni
+`alevi-ana-sunucu.tar.gz` dosyasını sunucuya yükleyip açın,
+`node index.js` ile yeniden başlatın. `.env` dosyanız yerinde kalır.
 
 ## E-posta dogrulama notu
 

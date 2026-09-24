@@ -13,6 +13,7 @@ abstract interface class ApiClientPort {
   Future<Map<String, dynamic>> getAbsolute(String url);
   Future<void> delete(String path);
   Future<void> setAccessToken(String? token);
+  Future<bool> refreshSession();
 }
 
 class ApiClient implements ApiClientPort {
@@ -49,11 +50,17 @@ class ApiClient implements ApiClientPort {
 
   Future<http.Response> _withRefresh(String path, Future<http.Response> Function() send) async {
     final first = await send();
-    if (first.statusCode != 401 || _accessToken == null || _isAuthPath(path)) return first;
+    // Web'de sayfa yenilemede bellek tokeni bos olabilir; kayitli refresh
+    // tokeni varsa her 401'de yenileme denenir (basarisizsa sessizce ilk yant doner).
+    if (first.statusCode != 401 || _isAuthPath(path)) return first;
     final refreshed = await _refreshOnce();
     if (!refreshed) return first;
     return send();
   }
+
+  /// Kayitli refresh token ile oturumu canlandirir (acilis + 401 kurtarma).
+  @override
+  Future<bool> refreshSession() => _refreshOnce();
 
   /// Tek seferlik refresh (paralel 401'ler tek istekte birlesir).
   /// Basarisizsa oturum tamamen dusurulur, cagiran giris ekranina doner.
@@ -197,6 +204,9 @@ class ApiException implements Exception {
 class MockApiClient implements ApiClientPort {
   @override
   Future<void> setAccessToken(String? token) async {}
+
+  @override
+  Future<bool> refreshSession() async => false;
 
   @override
   Future<Map<String, dynamic>> get(String path) async {

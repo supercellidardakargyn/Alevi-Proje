@@ -41,30 +41,6 @@ function loadEnv(file) {
 
 loadEnv(path.join(ROOT, '.env'));
 
-function readEnvFileValue(key) {
-  try {
-    for (const rawLine of fs.readFileSync(path.join(ROOT, '.env'), 'utf8').split('\n')) {
-      const line = rawLine.replace(/\r$/, '').trim();
-      if (!line || line.startsWith('#')) continue;
-      const index = line.indexOf('=');
-      if (index === -1) continue;
-      if (line.slice(0, index).trim() === key) return line.slice(index + 1).trim();
-    }
-  } catch {
-    // .env okunamazsa ortam degiskeniyle devam edilir.
-  }
-  return undefined;
-}
-
-function isAutoUpdateEnabled() {
-  // Panel degiskeni .env'i ezebilir; ikisinden biri aciksa acik sayilir.
-  const values = [process.env.AUTO_UPDATE, readEnvFileValue('AUTO_UPDATE')];
-  return values.some((value) => {
-    const normalized = String(value ?? '').trim().toLowerCase();
-    return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on';
-  });
-}
-
 const REQUIRED_KEYS = [
   ['DATABASE_URL', 'Supabase/Neon Postgres connection string'],
   ['JWT_ACCESS_SECRET', 'openssl rand -hex 32'],
@@ -89,14 +65,12 @@ process.env.NODE_ENV = 'production';
 if (!process.env.PORT) process.env.PORT = '3000';
 
 const children = [];
-let updating = false;
 function run(name, command, args, options) {
   const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'], ...options });
   children.push(child);
   child.stdout.on('data', (data) => process.stdout.write(`[${name}] ${data}`));
   child.stderr.on('data', (data) => process.stderr.write(`[${name}] ${data}`));
   child.on('exit', (code) => {
-    if (updating) return;
     console.error(`[${name}] cikti (kod ${code}). Kapatiliyor...`);
     shutdown(1);
   });
@@ -201,167 +175,7 @@ function bootChildren() {
   });
 }
 
-function stopChildren() {
-  for (const child of children.splice(0)) {
-    try {
-      child.kill('SIGTERM');
-    } catch {
-      // Zaten kapanmis olabilir.
-    }
-  }
-}
 bootChildren();
 
 console.log(`[ok] api=:3000 admin=:3001 gateway=:${process.env.GATEWAY_PORT || '25577'} — kapatmak icin Ctrl+C`);
 console.log('[not] tek komutla calisir; arka planda tutmak icin ornek: npm i -g pm2 && pm2 start index.js --name alevi');
-
-// --- Otomatik guncelleme -------------------------------------------------
-// AUTO_UPDATE=1 ise GitHub `latest` release 10 dakikada bir kontrol edilir.
-// Yeni surum varsa indirilir, acilir, bagimliliklar tazelenir, migration
-// calisir ve servisler ana process kapanmadan yeniden baslatilir.
-// .env ve uploads/ korunur. Paneldeki sabit komut degismez.
-const UPDATE_REPO = process.env.UPDATE_REPO || 'supercellidardakargyn/Alevi-Proje';
-const UPDATE_ASSET = 'alevi-main.tar.gz';
-const UPDATE_CHECK_MS = Number(process.env.UPDATE_CHECK_MS || 600_000);
-const UPDATE_STATE_FILE = path.join(ROOT, '.update-state.json');
-
-function readUpdateState() {
-  try {
-    return JSON.parse(fs.readFileSync(UPDATE_STATE_FILE, 'utf8'));
-  } catch {
-    return {};
-  }
-}
-
-function writeUpdateState(state) {
-  try {
-    fs.writeFileSync(UPDATE_STATE_FILE, JSON.stringify(state), { mode: 0o600 });
-  } catch {
-    // Guncelleme durumu yazilamazsa bir sonraki tur tekrar dener.
-  }
-}
-
-async function githubJson(url) {
-  const response = await fetch(url, {
-    headers: { 'user-agent': 'alevi-updater', accept: 'application/vnd.github+json' },
-    signal: AbortSignal.timeout(20_000)
-  });
-  if (!response.ok) throw new Error(`GitHub yanıtı: ${response.status}`);
-  return response.json();
-}
-
-async function checkForUpdate() {
-  if (!isAutoUpdateEnabled()) return;
-  try {
-    const release = await githubJson(`https://api.github.com/repos/${UPDATE_REPO}/releases/tags/latest`);
-    const state = readUpdateState();
-    if (state.releaseId === release.id) return;
-    const asset = (release.assets || []).find((entry) => entry.name === UPDATE_ASSET);
-    if (!asset) {
-      console.error('[guncelle] release bulundu ama paket yok, atlaniyor.');
-      return;
-    }
-    console.log(`[guncelle] yeni surum: ${release.tag_name || release.id}, indiriliyor...`);
-    await applyUpdate(asset);
-    writeUpdateState({ releaseId: release.id, at: new Date().toISOString() });
-    console.log('[guncelle] tamam, servisler yeni surumle baslatildi.');
-  } catch (error) {
-    console.error(`[guncelle] kontrol basarisiz, 10 dk sonra tekrar: ${(error && error.message) || error}`);
-  }
-}
-
-async function applyUpdate(asset) {
-  const tmpFile = path.join(ROOT, '.update-pending.tgz');
-  const download = await fetch(asset.url, {
-    headers: { 'user-agent': 'alevi-updater', accept: 'application/octet-stream' },
-    signal: AbortSignal.timeout(120_000)
-  });
-  if (!download.ok || !download.body) throw new Error(`Indirme basarisiz: ${download.status}`);
-  const file = fs.createWriteStream(tmpFile, { mode: 0o600 });
-  await new Promise((resolve, reject) => {
-    download.body.pipe(file);
-    download.body.on('error', reject);
-    file.on('finish', resolve);
-    file.on('error', reject);
-  });
-  updating = true;
-  stopChildren();
-  await new Promise((resolve) => setTimeout(resolve, 2000));
-  // CI paketi .env.example tasir; uretim .env'i yedeklenip geri yuklenir.
-  // Elle yuklenen istemci dosyalari (site/indir) da korunur.
-  const envFile = path.join(ROOT, '.env');
-  const envBackup = path.join(ROOT, '.env.update-bak');
-  const indirDir = path.join(ROOT, 'site', 'indir');
-  const indirBackup = path.join(ROOT, '.site-indir-bak');
-  try {
-    if (fs.existsSync(envFile)) fs.copyFileSync(envFile, envBackup);
-  } catch {
-    // Yedek alinamazsa guncelleme yine de dener, .env riske girer.
-  }
-  try {
-    if (fs.existsSync(indirDir)) {
-      fs.rmSync(indirBackup, { recursive: true, force: true });
-      fs.cpSync(indirDir, indirBackup, { recursive: true });
-    }
-  } catch {
-    // Indir yedegi opsiyoneldir.
-  }
-  const extract = spawnSync('tar', ['-xzf', tmpFile, '-C', ROOT, '--strip-components=1'], { stdio: 'inherit' });
-  fs.rmSync(tmpFile, { force: true });
-  try {
-    if (fs.existsSync(envBackup)) {
-      fs.copyFileSync(envBackup, envFile);
-      fs.rmSync(envBackup, { force: true });
-    }
-  } catch {
-    console.error('[guncelle] .env geri yuklenemedi, .env.update-bak dosyasini kontrol edin.');
-  }
-  try {
-    if (fs.existsSync(indirBackup)) {
-      fs.mkdirSync(indirDir, { recursive: true });
-      for (const entry of fs.readdirSync(indirBackup)) {
-        fs.cpSync(path.join(indirBackup, entry), path.join(indirDir, entry), { recursive: true, force: true });
-      }
-      fs.rmSync(indirBackup, { recursive: true, force: true });
-    }
-  } catch {
-    // Indir geri yuklemesi opsiyoneldir.
-  }
-  if (extract.status !== 0) {
-    console.error('[guncelle] acma basarisiz, eski surumle devam icin yeniden baslatin.');
-    updating = false;
-    bootChildren();
-    return;
-  }
-  // Bagimlilik degismis olabilir: kilit dosyasina gore taze kurulum.
-  for (const dir of [
-    path.join(ROOT, 'services/api/node_modules'),
-    path.join(ROOT, 'services/gateway/node_modules'),
-    path.join(ROOT, 'admin-standalone/node_modules'),
-    path.join(ROOT, 'packages/config/node_modules'),
-    path.join(ROOT, 'packages/contracts/node_modules')
-  ]) {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
-  installAllDeps();
-  runMigrations();
-  bootChildren();
-  updating = false;
-}
-
-function startAutoUpdate() {
-  if (!isAutoUpdateEnabled()) {
-    console.log('[guncelle] kapali (acmak icin .env: AUTO_UPDATE=1)');
-    return;
-  }
-  console.log(`[guncelle] acik: ${UPDATE_REPO} her 10 dakikada kontrol edilecek.`);
-  const timer = setInterval(() => {
-    void checkForUpdate();
-  }, Number.isFinite(UPDATE_CHECK_MS) && UPDATE_CHECK_MS > 0 ? UPDATE_CHECK_MS : 600_000);
-  timer.unref?.();
-  setTimeout(() => {
-    void checkForUpdate();
-  }, 30_000).unref?.();
-}
-
-startAutoUpdate();
