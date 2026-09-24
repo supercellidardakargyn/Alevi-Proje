@@ -23,14 +23,27 @@ jobs:
         with:
           channel: stable
           cache: true
+      - name: masaustu platformlarini ac
+        shell: bash
+        run: flutter config --enable-windows-desktop
       - name: derle
-        working-directory: apps/client
+        shell: bash
         run: |
-          flutter build windows --release `
-            --dart-define=API_BASE_URL=${{ env.API_URL }} `
-            --dart-define=MOCK_DATA=false `
-            --dart-define=APP_NAME="${{ env.APP_NAME_DEFINE }}" `
-            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }}
+          flutter build windows --release \
+            --dart-define=API_BASE_URL=${{ env.API_URL }} \
+            --dart-define=MOCK_DATA=false \
+            --dart-define=APP_NAME="${{ env.APP_NAME_DEFINE }}" \
+            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }} 2>&1 | tee build.log
+      - name: hata ozeti
+        if: failure()
+        shell: bash
+        run: |
+          if [ -f build.log ]; then
+            TAIL=$(tail -n 40 build.log | tr -d '\r' | sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error::Windows x64 derleme hatasi -> $TAIL"
+          else
+            echo "::error::build.log yok; kurulum adimi patladi."
+          fi
       - name: paketle
         shell: pwsh
         run: Compress-Archive -Path apps/client/build/windows/x64/runner/Release/* -DestinationPath can-meydani-windows-x64.zip -Force
@@ -38,30 +51,6 @@ jobs:
         with:
           name: windows-x64
           path: can-meydani-windows-x64.zip
-
-  windows-arm64:
-    runs-on: windows-11-arm
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-      - name: derle
-        working-directory: apps/client
-        run: |
-          flutter build windows --release `
-            --dart-define=API_BASE_URL=${{ env.API_URL }} `
-            --dart-define=MOCK_DATA=false `
-            --dart-define=APP_NAME="${{ env.APP_NAME_DEFINE }}" `
-            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }}
-      - name: paketle
-        shell: pwsh
-        run: Compress-Archive -Path apps/client/build/windows/arm64/runner/Release/* -DestinationPath can-meydani-windows-arm64.zip -Force
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows-arm64
-          path: can-meydani-windows-arm64.zip
 
   linux-x64:
     runs-on: ubuntu-latest
@@ -75,47 +64,30 @@ jobs:
         with:
           channel: stable
           cache: true
+      - name: masaustu platformlarini ac
+        run: flutter config --enable-linux-desktop
       - name: derle
-        working-directory: apps/client
         run: |
           flutter build linux --release \
             --dart-define=API_BASE_URL=${{ env.API_URL }} \
             --dart-define=MOCK_DATA=false \
             --dart-define=APP_NAME="${{ env.APP_NAME_DEFINE }}" \
-            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }}
+            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }} 2>&1 | tee build.log
+      - name: hata ozeti
+        if: failure()
+        run: |
+          if [ -f build.log ]; then
+            TAIL=$(tail -n 40 build.log | tr -d '\r' | sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error::Linux x64 derleme hatasi -> $TAIL"
+          else
+            echo "::error::build.log yok; kurulum adimi patladi."
+          fi
       - name: paketle
         run: tar -czf can-meydani-linux-x64.tar.gz -C apps/client/build/linux/x64/release/bundle .
       - uses: actions/upload-artifact@v4
         with:
           name: linux-x64
           path: can-meydani-linux-x64.tar.gz
-
-  linux-arm64:
-    runs-on: ubuntu-24.04-arm
-    steps:
-      - uses: actions/checkout@v4
-      - name: masaustu arac zinciri
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-      - name: derle
-        working-directory: apps/client
-        run: |
-          flutter build linux --release \
-            --dart-define=API_BASE_URL=${{ env.API_URL }} \
-            --dart-define=MOCK_DATA=false \
-            --dart-define=APP_NAME="${{ env.APP_NAME_DEFINE }}" \
-            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }}
-      - name: paketle
-        run: tar -czf can-meydani-linux-arm64.tar.gz -C apps/client/build/linux/arm64/release/bundle .
-      - uses: actions/upload-artifact@v4
-        with:
-          name: linux-arm64
-          path: can-meydani-linux-arm64.tar.gz
 
   macos:
     runs-on: macos-latest
@@ -125,18 +97,28 @@ jobs:
         with:
           channel: stable
           cache: true
+      - name: masaustu platformlarini ac
+        run: flutter config --enable-macos-desktop
       - name: derle
-        working-directory: apps/client
         run: |
           flutter build macos --release \
             --dart-define=API_BASE_URL=${{ env.API_URL }} \
             --dart-define=MOCK_DATA=false \
             --dart-define=APP_NAME="${{ env.APP_NAME_DEFINE }}" \
-            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }}
+            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }} 2>&1 | tee build.log
+      - name: hata ozeti
+        if: failure()
+        run: |
+          if [ -f build.log ]; then
+            TAIL=$(tail -n 40 build.log | tr -d '\r' | sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error::macOS derleme hatasi -> $TAIL"
+          else
+            echo "::error::build.log yok; kurulum adimi patladi."
+          fi
       - name: paketle
         run: |
           cd apps/client/build/macos/Build/Products/Release
-          ditto -c -k --sequesterRsrc --keepParent alevi_client.app can-meydani-macos.zip
+          ditto -c -k --sequesterRsrc --keepParent "Can Meydanı.app" can-meydani-macos.zip
           mv can-meydani-macos.zip ../../../../../../
       - uses: actions/upload-artifact@v4
         with:
@@ -152,13 +134,17 @@ jobs:
           channel: stable
           cache: true
       - name: derle
-        working-directory: apps/client
         run: |
           flutter build web --release --base-href=/web/ \
             --dart-define=API_BASE_URL=${{ env.API_URL }} \
             --dart-define=MOCK_DATA=false \
             --dart-define=APP_NAME="${{ env.APP_NAME_DEFINE }}" \
-            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }}
+            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }} 2>&1 | tee build.log
+      - name: hata ozeti
+        if: failure()
+        run: |
+          TAIL=$(tail -n 40 build.log | tr -d '\r' | sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g')
+          echo "::error::Web derleme hatasi -> $TAIL"
       - name: paketle
         run: cd apps/client/build/web && zip -r ../../../../can-meydani-web.zip .
       - uses: actions/upload-artifact@v4
@@ -167,7 +153,7 @@ jobs:
           path: can-meydani-web.zip
 
   yayinla:
-    needs: [windows-x64, windows-arm64, linux-x64, linux-arm64, macos, web]
+    needs: [windows-x64, linux-x64, macos, web]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

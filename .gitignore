@@ -27,3 +27,6 @@ coverage/
 *.log
 .DS_Store
 Thumbs.db
+
+# gecici push betigi (token icerir)
+scripts/git-push-tmp.ps1
