@@ -584,6 +584,13 @@ export default function AdminDashboard() {
           <div className="modal">
             <h3>{replyTarget.subject}</h3>
             <p>{replyTarget.body}</p>
+            {replyTarget.aiDraft && (
+              <div className="ai-draft">
+                <p className="eyebrow">YAPAY ZEKÂ TASLAĞI</p>
+                <p>{replyTarget.aiDraft}</p>
+                <button type="button" className="outline-button small" onClick={() => setReplyText(replyTarget.aiDraft ?? "")}>Taslağı kullan</button>
+              </div>
+            )}
             <label>Yanıtınız<textarea value={replyText} onChange={(event) => setReplyText(event.target.value)} rows={4} maxLength={2000} placeholder="Kullanıcıya yanıt yazın…" /></label>
             <div className="modal-actions">
               <button type="button" className="outline-button" onClick={() => setReplyTarget(null)}>Vazgeç</button>

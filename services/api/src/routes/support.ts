@@ -4,6 +4,7 @@ import { createTicketRequestSchema, replyTicketRequestSchema } from '@alevi/cont
 import { PrismaClient } from '@prisma/client';
 import { validate } from '../middleware/validation';
 import { decryptText, encryptText } from '../security/fields';
+import { draftSupportReply } from '../services/ai';
 import { asyncHandler, notFoundIfNull, routeParam, userId } from './route-utils';
 import { ApiError } from '../middleware/errors';
 
@@ -11,13 +12,14 @@ const ticketListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20)
 });
 
-function present(row: { id: string; subject: string; body: string; status: string; reply: string | null; createdAt: Date; updatedAt: Date }) {
+function present(row: { id: string; subject: string; body: string; status: string; reply: string | null; aiDraft?: string | null; createdAt: Date; updatedAt: Date }) {
   return {
     id: row.id,
     subject: row.subject,
     body: decryptText(row.body),
     status: row.status,
     reply: row.reply ? decryptText(row.reply) : null,
+    aiDraft: row.aiDraft ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString()
   };
@@ -39,6 +41,13 @@ export function supportRoutes(prisma: PrismaClient): Router {
     const ticket = await prisma.supportTicket.create({
       data: { userId: userId(req), subject: body.subject, body: encryptText(body.body) }
     });
+    // Yapay zeka taslagi arka planda uretilir, yaniti geciktirmez.
+    void draftSupportReply(body.subject, body.body)
+      .then((draft) => {
+        if (!draft) return undefined;
+        return prisma.supportTicket.update({ where: { id: ticket.id }, data: { aiDraft: encryptText(draft) } });
+      })
+      .catch(() => undefined);
     res.status(201).json({ data: present(ticket) });
   }));
   return router;

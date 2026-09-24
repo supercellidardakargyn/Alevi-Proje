@@ -71,6 +71,7 @@ export interface SupportTicket {
   body: string;
   status: string;
   reply: string | null;
+  aiDraft: string | null;
   createdAt: string;
   user?: { id: string; displayName: string };
 }

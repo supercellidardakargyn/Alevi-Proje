@@ -4,6 +4,7 @@ import '../services/api_client.dart';
 import '../services/location_service.dart';
 import '../services/notifier.dart';
 import '../services/secure_storage.dart';
+import '../services/update_service.dart';
 import '../theme/app_theme.dart';
 import 'community/community_screen.dart';
 import 'discover/discover_screen.dart';
@@ -45,6 +46,9 @@ class _MainShellState extends State<MainShell> {
     _notifier = AppNotifier(apiClient: widget.apiClient)..start();
     _shareLocation();
     _heartbeat();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UpdateService(apiClient: widget.apiClient, storage: widget.storage).checkDaily(context);
+    });
   }
 
   @override

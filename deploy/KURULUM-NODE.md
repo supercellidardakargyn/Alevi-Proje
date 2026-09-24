@@ -52,3 +52,10 @@ yeniden başlatın. Paketler her `main` push'unda otomatik üretilir
 
 SMTP/Gmail doldurulmadan production acilmaz (bilincli durdurma).
 Gmail "normal sifre" ile calismaz, uygulama şifresi sarttir.
+
+## Yapay zekâ destek taslağı (isteğe bağlı)
+
+Destek talebi açılınca Vercel uyumlu API'ye kısa yanıt taslağı yazdırılır;
+taslak doğrudan gönderilmez, yönetim panelinde onaylanır. `.env`:
+`AI_ENABLED=true`, `AI_API_KEY=<vercel anahtarı>`, `AI_MODEL=<model adı>`
+(ör. kullandığın model). Kapalıysa hiçbir şey değişmez.

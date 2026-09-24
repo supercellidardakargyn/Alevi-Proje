@@ -23,6 +23,10 @@ const envSchema = z.object({
   SMTP_USER: z.string().default(''),
   SMTP_PASS: z.string().default(''),
   SMTP_FROM: z.string().default('Can Meydanı <noreply@sonalis.com.tr>'),
+  AI_ENABLED: z.string().default('false'),
+  AI_API_URL: z.string().default('https://ai-gateway.vercel.sh/v1'),
+  AI_API_KEY: z.string().default(''),
+  AI_MODEL: z.string().default(''),
   UPLOAD_DIR: z.string().default('./uploads'),
   MAX_UPLOAD_MB: z.coerce.number().int().min(1).max(20).default(5),
   DAILY_LIKE_LIMIT: z.coerce.number().int().min(1).max(500).default(20),
@@ -83,6 +87,12 @@ export interface AppConfig {
   uploadDir: string;
   maxUploadMb: number;
   dailyLikeLimit: number;
+  ai: {
+    enabled: boolean;
+    apiUrl: string;
+    apiKey: string;
+    model: string;
+  };
   accessTokenTtlSeconds: number;
   refreshTokenTtlSeconds: number;
   sensitiveDataKey: Buffer;
@@ -196,6 +206,12 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     uploadDir: parsed.UPLOAD_DIR,
     maxUploadMb: parsed.MAX_UPLOAD_MB,
     dailyLikeLimit: parsed.DAILY_LIKE_LIMIT,
+    ai: {
+      enabled: parseBoolean(parsed.AI_ENABLED),
+      apiUrl: parsed.AI_API_URL.replace(/\/$/, ''),
+      apiKey: parsed.AI_API_KEY,
+      model: parsed.AI_MODEL
+    },
     accessTokenTtlSeconds: parsed.ACCESS_TOKEN_TTL_SECONDS,
     refreshTokenTtlSeconds: parsed.REFRESH_TOKEN_TTL_SECONDS,
     sensitiveDataKey: parseKey(parsed.SENSITIVE_DATA_KEY, parsed.FIELD_ENCRYPTION_KEY_BASE64, nodeEnv),

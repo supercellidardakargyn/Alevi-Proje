@@ -10,6 +10,7 @@ abstract interface class ApiClientPort {
   Future<Map<String, dynamic>> post(String path, {Map<String, dynamic>? body});
   Future<Map<String, dynamic>> patch(String path, {Map<String, dynamic>? body});
   Future<Map<String, dynamic>> upload(String path, String field, List<int> bytes, String filename);
+  Future<Map<String, dynamic>> getAbsolute(String url);
   Future<void> delete(String path);
   Future<void> setAccessToken(String? token);
 }
@@ -128,6 +129,19 @@ class ApiClient implements ApiClientPort {
     final response = await _withRefresh(path, () => _client.delete(_uri(path), headers: _headers).timeout(_timeout));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(response.statusCode, _messageOf(response));
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getAbsolute(String url) async {
+    final response = await _client.get(Uri.parse(url), headers: {'accept': 'application/json'}).timeout(_timeout);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(response.statusCode, _messageOf(response));
+    }
+    try {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {
+      throw ApiException(response.statusCode, 'Sunucu geçersiz yanıt döndürdü');
     }
   }
 
@@ -290,6 +304,10 @@ class MockApiClient implements ApiClientPort {
       'data': {'avatarUrl': '/v1/media/mock.jpg'},
     };
   }
+
+  @override
+  Future<Map<String, dynamic>> getAbsolute(String url) async =>
+      <String, dynamic>{'android': {'versionCode': 4}};
 
   @override
   Future<void> delete(String path) async {}

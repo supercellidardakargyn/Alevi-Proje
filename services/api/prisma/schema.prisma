@@ -358,6 +358,7 @@ model SupportTicket {
   body      String   @db.Text
   status    String   @default("OPEN") @db.VarChar(16)
   reply     String?  @db.Text
+  aiDraft   String?  @map("ai_draft") @db.Text
   repliedAt DateTime? @map("replied_at")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
