@@ -27,6 +27,7 @@ jobs:
         shell: bash
         run: flutter config --enable-windows-desktop
       - name: derle
+        working-directory: apps/client
         shell: bash
         run: |
           flutter build windows --release \
@@ -35,6 +36,7 @@ jobs:
             --dart-define=APP_NAME="${{ env.APP_NAME_DEFINE }}" \
             --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }} 2>&1 | tee build.log
       - name: hata ozeti
+        working-directory: apps/client
         if: failure()
         shell: bash
         run: |
@@ -67,6 +69,7 @@ jobs:
       - name: masaustu platformlarini ac
         run: flutter config --enable-linux-desktop
       - name: derle
+        working-directory: apps/client
         run: |
           flutter build linux --release \
             --dart-define=API_BASE_URL=${{ env.API_URL }} \
@@ -74,6 +77,7 @@ jobs:
             --dart-define=APP_NAME="${{ env.APP_NAME_DEFINE }}" \
             --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }} 2>&1 | tee build.log
       - name: hata ozeti
+        working-directory: apps/client
         if: failure()
         run: |
           if [ -f build.log ]; then
@@ -100,6 +104,7 @@ jobs:
       - name: masaustu platformlarini ac
         run: flutter config --enable-macos-desktop
       - name: derle
+        working-directory: apps/client
         run: |
           flutter build macos --release \
             --dart-define=API_BASE_URL=${{ env.API_URL }} \
@@ -107,6 +112,7 @@ jobs:
             --dart-define=APP_NAME="${{ env.APP_NAME_DEFINE }}" \
             --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }} 2>&1 | tee build.log
       - name: hata ozeti
+        working-directory: apps/client
         if: failure()
         run: |
           if [ -f build.log ]; then
@@ -134,6 +140,7 @@ jobs:
           channel: stable
           cache: true
       - name: derle
+        working-directory: apps/client
         run: |
           flutter build web --release --base-href=/web/ \
             --dart-define=API_BASE_URL=${{ env.API_URL }} \
@@ -141,6 +148,7 @@ jobs:
             --dart-define=APP_NAME="${{ env.APP_NAME_DEFINE }}" \
             --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }} 2>&1 | tee build.log
       - name: hata ozeti
+        working-directory: apps/client
         if: failure()
         run: |
           TAIL=$(tail -n 40 build.log | tr -d '\r' | sed -e 's/%/%25/g' | sed -e ':a;N;$!ba;s/\n/%0A/g')
