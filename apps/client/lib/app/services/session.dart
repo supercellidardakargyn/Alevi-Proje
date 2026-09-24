@@ -4,6 +4,7 @@ class Session {
   static String? currentUserId;
   static String? accessToken;
   static String apiBaseUrl = '';
+  static String? openConversationId;
 
   static Map<String, String> get authHeaders => <String, String>{
         if (accessToken != null) 'authorization': 'Bearer $accessToken',
@@ -19,5 +20,6 @@ class Session {
   static void clear() {
     currentUserId = null;
     accessToken = null;
+    openConversationId = null;
   }
 }

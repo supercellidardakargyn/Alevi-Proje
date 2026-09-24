@@ -43,7 +43,22 @@ class _MainShellState extends State<MainShell> {
       MessagesScreen(apiClient: widget.apiClient),
       ProfileScreen(storage: widget.storage, apiClient: widget.apiClient, onLoggedOut: widget.onLoggedOut),
     ];
-    _notifier = AppNotifier(apiClient: widget.apiClient)..start();
+    _notifier = AppNotifier(
+      apiClient: widget.apiClient,
+      onMessageTap: (conversationId, name) {
+        if (!mounted) return;
+        setState(() => _selectedIndex = 3);
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ChatScreen(
+              name: name,
+              conversationId: conversationId,
+              apiClient: widget.apiClient,
+            ),
+          ),
+        );
+      },
+    )..start();
     _shareLocation();
     _heartbeat();
     WidgetsBinding.instance.addPostFrameCallback((_) {

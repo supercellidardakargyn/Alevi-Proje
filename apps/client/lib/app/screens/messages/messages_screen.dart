@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../models/conversation.dart';
@@ -63,68 +65,78 @@ class _MessagesScreenState extends State<MessagesScreen> {
             .toList();
     final conversations = [...filter(_conversations)];
     return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-        children: [
-          ScreenHeader(
-            title: 'Mesajlar',
-            subtitle: 'Sohbetlerin ve bağlantıların.',
-            action: IconButton(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => MatchesScreen(apiClient: widget.apiClient)),
+      child: RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          children: [
+            ScreenHeader(
+              title: 'Mesajlar',
+              subtitle: 'Sohbetlerin ve bağlantıların.',
+              action: IconButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => MatchesScreen(apiClient: widget.apiClient)),
+                ),
+                icon: const Icon(Icons.edit_outlined, color: AppColors.burgundy),
+                tooltip: 'Eşleşmelerden sohbet başlat',
               ),
-              icon: const Icon(Icons.edit_outlined, color: AppColors.burgundy),
-              tooltip: 'Eşleşmelerden sohbet başlat',
             ),
-          ),
-          const SizedBox(height: 20),
-          TextField(
-            decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Mesajlarda ara'),
-            onChanged: (value) => setState(() => _query = value),
-          ),
-          const SizedBox(height: 18),
-          if (_loading)
-            const Center(child: LinearProgressIndicator())
-          else if (_error != null && conversations.isEmpty)
-            Row(
-              children: [
-                Expanded(child: Text(_error!, style: const TextStyle(color: AppColors.muted))),
-                TextButton(onPressed: _load, child: const Text('Tekrar dene')),
-              ],
-            )
-          else if (conversations.isEmpty)
-            const EmptyState(
-              icon: Icons.chat_bubble_outline,
-              title: 'Henüz sohbet yok',
-              body: 'Keşfette eşleşince sohbetlerin burada listelenir.',
-            )
-          else
-            ...conversations.map(
-              (conversation) => _ConversationTile(conversation: conversation, apiClient: widget.apiClient),
+            const SizedBox(height: 20),
+            TextField(
+              decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Mesajlarda ara'),
+              onChanged: (value) => setState(() => _query = value),
             ),
-        ],
+            const SizedBox(height: 18),
+            if (_loading)
+              const Center(child: LinearProgressIndicator())
+            else if (_error != null && conversations.isEmpty)
+              Row(
+                children: [
+                  Expanded(child: Text(_error!, style: const TextStyle(color: AppColors.muted))),
+                  TextButton(onPressed: _load, child: const Text('Tekrar dene')),
+                ],
+              )
+            else if (conversations.isEmpty)
+              const EmptyState(
+                icon: Icons.chat_bubble_outline,
+                title: 'Henüz sohbet yok',
+                body: 'Keşfette eşleşince sohbetlerin burada listelenir.',
+              )
+            else
+              ...conversations.map(
+                (conversation) => _ConversationTile(
+                  conversation: conversation,
+                  apiClient: widget.apiClient,
+                  onChatClosed: () {
+                    if (mounted) _load();
+                  },
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _ConversationTile extends StatelessWidget {
-  const _ConversationTile({required this.conversation, required this.apiClient});
+  const _ConversationTile({required this.conversation, required this.apiClient, required this.onChatClosed});
 
   final Conversation conversation;
   final ApiClientPort apiClient;
+  final VoidCallback onChatClosed;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
-        onTap: () {
+        onTap: () async {
           final otherId = conversation.memberIds.firstWhere(
             (id) => id != Session.currentUserId,
             orElse: () => '',
           );
-          Navigator.of(context).push(
+          await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => ChatScreen(
                 name: conversation.name,
@@ -134,6 +146,7 @@ class _ConversationTile extends StatelessWidget {
               ),
             ),
           );
+          onChatClosed();
         },
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         leading: AvatarCircle(name: conversation.name, size: 54, online: conversation.online),
@@ -160,6 +173,14 @@ class _ConversationTile extends StatelessWidget {
   }
 }
 
+class _ChatMessage {
+  const _ChatMessage({required this.id, required this.senderId, required this.body});
+
+  final String id;
+  final String senderId;
+  final String body;
+}
+
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key, required this.name, this.conversationId, this.otherUserId, required this.apiClient});
 
@@ -172,29 +193,59 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   final _controller = TextEditingController();
-  final List<String> _messages = [];
+  final List<_ChatMessage> _messages = [];
   bool _loading = false;
   String? _error;
   bool _sending = false;
+  Timer? _poller;
 
   bool get _remote => widget.conversationId != null;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     if (_remote) {
+      Session.openConversationId = widget.conversationId;
       _load();
+      // Baska cihazdan gelen mesajlar acik sohbete dussun.
+      _poller = Timer.periodic(const Duration(seconds: 5), (_) {
+        if (mounted && !_sending) _loadSilent();
+      });
     } else {
-      _messages.add('Hafta sonu sergiye gidelim mi?');
+      _messages.add(const _ChatMessage(id: 'demo', senderId: '', body: 'Hafta sonu sergiye gidelim mi?'));
     }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _poller?.cancel();
+    if (Session.openConversationId == widget.conversationId) {
+      Session.openConversationId = null;
+    }
     _controller.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _remote && mounted) _loadSilent();
+  }
+
+  List<_ChatMessage> _parseMessages(Object? data) {
+    final raw = (data is List ? data : const []).cast<Map<String, dynamic>>();
+    return raw
+        .map(
+          (item) => _ChatMessage(
+            id: (item['id'] ?? '').toString(),
+            senderId: (item['senderId'] ?? '').toString(),
+            body: (item['body'] ?? '').toString(),
+          ),
+        )
+        .toList();
   }
 
   Future<void> _load() async {
@@ -204,13 +255,12 @@ class _ChatScreenState extends State<ChatScreen> {
     });
     try {
       final result = await widget.apiClient.get('/v1/messages/conversations/${widget.conversationId}/messages');
-      final data = result['data'];
-      final raw = (data is List ? data : const []).cast<Map<String, dynamic>>();
+      final loaded = _parseMessages(result['data']);
       if (!mounted) return;
       setState(() {
         _messages
           ..clear()
-          ..addAll(raw.map((item) => (item['body'] ?? '').toString()));
+          ..addAll(loaded);
       });
     } on ApiException catch (error) {
       if (mounted) setState(() => _error = error.message ?? 'Mesajlar yüklenemedi');
@@ -221,12 +271,33 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  /// Sessiz senkron: gosterge oynatmaz, bos olmayan listede hatayi ezmez.
+  Future<void> _loadSilent() async {
+    if (!_remote) return;
+    try {
+      final result = await widget.apiClient.get('/v1/messages/conversations/${widget.conversationId}/messages');
+      final loaded = _parseMessages(result['data']);
+      if (!mounted) return;
+      setState(() {
+        _messages
+          ..clear()
+          ..addAll(loaded);
+        _error = null;
+      });
+    } on ApiException catch (error) {
+      if (mounted && _messages.isEmpty) setState(() => _error = error.message ?? 'Mesajlar yüklenemedi');
+    } catch (_) {
+      if (mounted && _messages.isEmpty) setState(() => _error = 'Mesajlar yüklenemedi');
+    }
+  }
+
   Future<void> _send() async {
     final value = _controller.text.trim();
     if (value.isEmpty || _sending) return;
+    final ownId = Session.currentUserId ?? '';
     if (!_remote) {
       setState(() {
-        _messages.add(value);
+        _messages.add(_ChatMessage(id: 'local-${DateTime.now().microsecondsSinceEpoch}', senderId: ownId, body: value));
         _controller.clear();
       });
       return;
@@ -236,7 +307,7 @@ class _ChatScreenState extends State<ChatScreen> {
       await widget.apiClient.post('/v1/messages/conversations/${widget.conversationId}/messages', body: {'body': value});
       if (!mounted) return;
       setState(() {
-        _messages.add(value);
+        _messages.add(_ChatMessage(id: 'local-${DateTime.now().microsecondsSinceEpoch}', senderId: ownId, body: value));
         _controller.clear();
       });
     } on ApiException catch (error) {
@@ -286,18 +357,26 @@ class _ChatScreenState extends State<ChatScreen> {
                   : ListView.builder(
                       padding: const EdgeInsets.all(20),
                       itemCount: _messages.length,
-                      itemBuilder: (context, index) => Align(
-                        alignment: index.isEven ? Alignment.centerLeft : Alignment.centerRight,
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: index.isEven ? Colors.white : AppColors.burgundy,
-                            borderRadius: BorderRadius.circular(18),
+                      itemBuilder: (context, index) {
+                        final message = _messages[index];
+                        final mine = message.senderId.isNotEmpty
+                            ? message.senderId == Session.currentUserId
+                            : index.isEven;
+                        final mineColor = mine ? AppColors.burgundy : Colors.white;
+                        final textColor = mine ? Colors.white : AppColors.charcoal;
+                        return Align(
+                          alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: mineColor,
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Text(message.body, style: TextStyle(color: textColor)),
                           ),
-                          child: Text(_messages[index], style: TextStyle(color: index.isEven ? AppColors.charcoal : Colors.white)),
-                        ),
-                      ),
+                        );
+                      },
                     ),
             ),
           SafeArea(
