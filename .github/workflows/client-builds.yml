@@ -1,0 +1,192 @@
+name: client-builds
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "apps/client/**"
+      - ".github/workflows/client-builds.yml"
+permissions:
+  contents: write
+
+env:
+  API_URL: https://api.sonalis.com.tr
+  APP_NAME_DEFINE: Can Meydanı
+  GOOGLE_WEB_CLIENT: 1070934024659-clseqcimci54ubir7e317ralrdo1ja9q.apps.googleusercontent.com
+
+jobs:
+  windows-x64:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: derle
+        working-directory: apps/client
+        run: |
+          flutter build windows --release `
+            --dart-define=API_BASE_URL=${{ env.API_URL }} `
+            --dart-define=MOCK_DATA=false `
+            --dart-define=APP_NAME="${{ env.APP_NAME_DEFINE }}" `
+            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }}
+      - name: paketle
+        shell: pwsh
+        run: Compress-Archive -Path apps/client/build/windows/x64/runner/Release/* -DestinationPath can-meydani-windows-x64.zip -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64
+          path: can-meydani-windows-x64.zip
+
+  windows-arm64:
+    runs-on: windows-11-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: derle
+        working-directory: apps/client
+        run: |
+          flutter build windows --release `
+            --dart-define=API_BASE_URL=${{ env.API_URL }} `
+            --dart-define=MOCK_DATA=false `
+            --dart-define=APP_NAME="${{ env.APP_NAME_DEFINE }}" `
+            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }}
+      - name: paketle
+        shell: pwsh
+        run: Compress-Archive -Path apps/client/build/windows/arm64/runner/Release/* -DestinationPath can-meydani-windows-arm64.zip -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-arm64
+          path: can-meydani-windows-arm64.zip
+
+  linux-x64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: masaustu arac zinciri
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: derle
+        working-directory: apps/client
+        run: |
+          flutter build linux --release \
+            --dart-define=API_BASE_URL=${{ env.API_URL }} \
+            --dart-define=MOCK_DATA=false \
+            --dart-define=APP_NAME="${{ env.APP_NAME_DEFINE }}" \
+            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }}
+      - name: paketle
+        run: tar -czf can-meydani-linux-x64.tar.gz -C apps/client/build/linux/x64/release/bundle .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-x64
+          path: can-meydani-linux-x64.tar.gz
+
+  linux-arm64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - name: masaustu arac zinciri
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: derle
+        working-directory: apps/client
+        run: |
+          flutter build linux --release \
+            --dart-define=API_BASE_URL=${{ env.API_URL }} \
+            --dart-define=MOCK_DATA=false \
+            --dart-define=APP_NAME="${{ env.APP_NAME_DEFINE }}" \
+            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }}
+      - name: paketle
+        run: tar -czf can-meydani-linux-arm64.tar.gz -C apps/client/build/linux/arm64/release/bundle .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-arm64
+          path: can-meydani-linux-arm64.tar.gz
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: derle
+        working-directory: apps/client
+        run: |
+          flutter build macos --release \
+            --dart-define=API_BASE_URL=${{ env.API_URL }} \
+            --dart-define=MOCK_DATA=false \
+            --dart-define=APP_NAME="${{ env.APP_NAME_DEFINE }}" \
+            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }}
+      - name: paketle
+        run: |
+          cd apps/client/build/macos/Build/Products/Release
+          ditto -c -k --sequesterRsrc --keepParent alevi_client.app can-meydani-macos.zip
+          mv can-meydani-macos.zip ../../../../../../
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: can-meydani-macos.zip
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: derle
+        working-directory: apps/client
+        run: |
+          flutter build web --release --base-href=/web/ \
+            --dart-define=API_BASE_URL=${{ env.API_URL }} \
+            --dart-define=MOCK_DATA=false \
+            --dart-define=APP_NAME="${{ env.APP_NAME_DEFINE }}" \
+            --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT }}
+      - name: paketle
+        run: cd apps/client/build/web && zip -r ../../../../can-meydani-web.zip .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web
+          path: can-meydani-web.zip
+
+  yayinla:
+    needs: [windows-x64, windows-arm64, linux-x64, linux-arm64, macos, web]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+      - name: topla ve sumer
+        run: |
+          mkdir -p publish
+          find out -type f \( -name '*.zip' -o -name '*.tar.gz' \) -exec cp {} publish/ \;
+          cd publish
+          sha256sum * > SHA256SUMS-CLIENT.txt
+          ls -la
+      - name: clients release guncelle
+        uses: ncipollo/release-action@v1
+        with:
+          tag: clients
+          name: Can Meydani istemci surumleri
+          allowUpdates: true
+          removeArtifacts: true
+          replacesArtifacts: true
+          artifacts: publish/*
