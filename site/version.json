@@ -11,5 +11,11 @@
     "url": "/indir/CanMeydani-Kurulum-0.5.1.exe",
     "portableUrl": "/indir/can-meydani-windows-x64.zip",
     "sha256": "45D4CBE066A4DC8715BB133DE3A65174C9368E084FF6C81BA4137ED53A47A96D"
+  },
+  "linux": {
+    "version": "0.5.1",
+    "versionCode": 6,
+    "url": "/indir/can-meydani-linux-x64.tar.gz",
+    "sha256": "559C885E66C593107377F9E0DD7219F8CABC1DBA3063699843F69F32DFEBE5BB"
   }
 }

@@ -128,7 +128,7 @@ jobs:
         run: |
           cd apps/client/build/macos/Build/Products/Release
           ditto -c -k --sequesterRsrc --keepParent "Can Meydanı.app" can-meydani-macos.zip
-          mv can-meydani-macos.zip ../../../../../../
+          mv can-meydani-macos.zip "$GITHUB_WORKSPACE/can-meydani-macos.zip"
       - uses: actions/upload-artifact@v4
         with:
           name: macos

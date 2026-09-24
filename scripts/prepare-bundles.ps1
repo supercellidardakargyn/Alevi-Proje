@@ -101,6 +101,10 @@ $setupSrc = Join-Root 'site/indir/CanMeydani-Kurulum-0.5.1.exe'
 if (Test-Path -LiteralPath $setupSrc) {
   Copy-Item -LiteralPath $setupSrc -Destination (Join-Root 'dist/CanMeydani-Kurulum-0.5.1.exe') -Force
 }
+$linuxSrc = Join-Root 'site/indir/can-meydani-linux-x64.tar.gz'
+if (Test-Path -LiteralPath $linuxSrc) {
+  Copy-Item -LiteralPath $linuxSrc -Destination (Join-Root 'dist/can-meydani-linux-x64.tar.gz') -Force
+}
 $manifest = Join-Root 'dist/SHA256SUMS.txt'
 Remove-Item -LiteralPath $manifest -Force -ErrorAction SilentlyContinue
 $distDir = Join-Root 'dist'
