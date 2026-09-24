@@ -97,10 +97,14 @@ $winSrc = Join-Root 'site/indir/can-meydani-windows-x64.zip'
 if (Test-Path -LiteralPath $winSrc) {
   Copy-Item -LiteralPath $winSrc -Destination (Join-Root 'dist/can-meydani-windows-x64.zip') -Force
 }
+$setupSrc = Join-Root 'site/indir/CanMeydani-Kurulum-0.5.0.exe'
+if (Test-Path -LiteralPath $setupSrc) {
+  Copy-Item -LiteralPath $setupSrc -Destination (Join-Root 'dist/CanMeydani-Kurulum-0.5.0.exe') -Force
+}
 $manifest = Join-Root 'dist/SHA256SUMS.txt'
 Remove-Item -LiteralPath $manifest -Force -ErrorAction SilentlyContinue
 $distDir = Join-Root 'dist'
-foreach ($f in @(Get-ChildItem -LiteralPath $distDir -File | Where-Object { $_.Name -like '*.tar.gz' -or $_.Name -like '*.apk' -or $_.Name -like '*.zip' })) {
+foreach ($f in @(Get-ChildItem -LiteralPath $distDir -File | Where-Object { $_.Name -like '*.tar.gz' -or $_.Name -like '*.apk' -or $_.Name -like '*.zip' -or $_.Name -like '*.exe' })) {
   $h = (Get-FileHash -LiteralPath $f.FullName -Algorithm SHA256).Hash
   Add-Content -LiteralPath $manifest "$h  $($f.Name)"
 }

@@ -8,7 +8,8 @@
   "windows": {
     "version": "0.5.0",
     "versionCode": 5,
-    "url": "/indir/can-meydani-windows-x64.zip",
-    "sha256": "7D40DFC45019978AEE318F2DE0F17649B809DF9D6974831C1A3AF90D17230D5E"
+    "url": "/indir/CanMeydani-Kurulum-0.5.0.exe",
+    "portableUrl": "/indir/can-meydani-windows-x64.zip",
+    "sha256": "052B8CC8C866B2B94426CA9C4B92DC1D71ECB49C95180DCDA51A113D439279E4"
   }
 }
