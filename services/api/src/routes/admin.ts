@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { validate } from '../middleware/validation';
 import { decryptText } from '../security/fields';
 import { hashToken } from '../security/crypto';
+import { supportAdminRoutes } from './support';
 import { asyncHandler, routeParam, userId } from './route-utils';
 import { ApiError } from '../middleware/errors';
 import { MeshManager, meshHealth } from '../mesh/manager';
@@ -211,5 +212,6 @@ export function adminRoutes(prisma: PrismaClient, mesh: MeshManager): Router {
     await writeAudit(prisma, { actorId, action: 'edge.delete', targetType: 'edge', targetId });
     res.status(204).send();
   }));
+  router.use(supportAdminRoutes(prisma));
   return router;
 }

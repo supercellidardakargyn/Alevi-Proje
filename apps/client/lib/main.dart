@@ -15,7 +15,7 @@ Future<void> main() async {
   final storage = SecureStorage();
   final ApiClientPort apiClient = config.mockData
       ? MockApiClient()
-      : ApiClient(baseUrl: config.apiBaseUrl);
+      : ApiClient(baseUrl: config.apiBaseUrl, storage: storage);
 
   runApp(
     AleviApp(

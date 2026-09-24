@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { AdminApiError, adminApi, setAdminToken, type AdminReport, type AdminUser, type CreatedEdgeNode, type DashboardOverview, type EdgeNode, type HealthState } from "../lib/api";
+import { AdminApiError, adminApi, setAdminToken, type AdminReport, type AdminUser, type CreatedEdgeNode, type DashboardOverview, type EdgeNode, type HealthState, type SupportTicket } from "../lib/api";
 import { adminSecurityNotes } from "../lib/security";
 
 const numberFormatter = new Intl.NumberFormat("tr-TR");
@@ -19,6 +19,7 @@ const navItems: ReadonlyArray<{ label: string; icon: string; href: string; count
   { label: "Genel bakış", icon: "grid", href: "#genel-bakis" },
   { label: "Kullanıcılar", icon: "users", href: "#kullanicilar", count: "users" },
   { label: "Şikâyetler", icon: "flag", href: "#sikayetler", count: "reports" },
+  { label: "Destek", icon: "layers", href: "#destek" },
   { label: "Sunucular", icon: "pulse", href: "#sunucular", count: "mesh" }
 ];
 
@@ -94,6 +95,9 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [reports, setReports] = useState<AdminReport[]>([]);
   const [edges, setEdges] = useState<EdgeNode[]>([]);
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [replyTarget, setReplyTarget] = useState<SupportTicket | null>(null);
+  const [replyText, setReplyText] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
@@ -121,17 +125,19 @@ export default function AdminDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const [dashboard, userList, reportList, edgeList] = await Promise.all([
+      const [dashboard, userList, reportList, edgeList, ticketList] = await Promise.all([
         adminApi.getOverview(),
         adminApi.getUsers(20).catch(() => [] as AdminUser[]),
         adminApi.getReports().catch(() => [] as AdminReport[]),
-        adminApi.getEdges().catch(() => [] as EdgeNode[])
+        adminApi.getEdges().catch(() => [] as EdgeNode[]),
+        adminApi.getTickets().catch(() => [] as SupportTicket[])
       ]);
       if (!signal.mounted) return;
       setOverview(dashboard);
       setUsers(userList);
       setReports(reportList);
       setEdges(edgeList);
+      setTickets(ticketList);
       setLastRefresh(new Date());
     } catch (reason: unknown) {
       if (!signal.mounted) return;
@@ -229,6 +235,40 @@ export default function AdminDashboard() {
     setUsers([]);
     setReports([]);
     setEdges([]);
+    setTickets([]);
+  }
+
+  async function handleReplyTicket(): Promise<void> {
+    if (!replyTarget || replyText.trim().length < 1) return;
+    setPendingAction(`ticket:${replyTarget.id}`);
+    try {
+      await adminApi.replyTicket(replyTarget.id, replyText.trim());
+      setTickets((current) =>
+        current.map((ticket) =>
+          ticket.id === replyTarget.id ? { ...ticket, status: "ANSWERED", reply: replyText.trim() } : ticket
+        )
+      );
+      setReplyTarget(null);
+      setReplyText("");
+      setActionMessage("Yanıt gönderildi.");
+    } catch {
+      setActionError("Yanıt gönderilemedi.");
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  async function handleCloseTicket(ticketId: string): Promise<void> {
+    setPendingAction(`ticket:${ticketId}`);
+    try {
+      await adminApi.closeTicket(ticketId);
+      setTickets((current) => current.filter((ticket) => ticket.id !== ticketId));
+      setActionMessage("Talep kapatıldı.");
+    } catch {
+      setActionError("Talep kapatılamadı. Önce yanıt gönderin.");
+    } finally {
+      setPendingAction(null);
+    }
   }
 
   async function handleCopyToken(): Promise<void> {
@@ -452,6 +492,30 @@ export default function AdminDashboard() {
             </article>
           </section>
 
+          <section aria-label="Destek talepleri">
+            <article className="panel" id="destek">
+              <div className="panel-heading"><div><p className="eyebrow">DESTEK MASASI</p><h2>Kullanıcı talepleri</h2></div><span className="date-badge">{formatNumber(tickets.length)}</span></div>
+              {tickets.length === 0 ? (
+                <div className="empty-state"><span className="empty-symbol" aria-hidden="true">◌</span><strong>{loading ? "Talepler yükleniyor" : "Bekleyen talep yok"}</strong><span>Kullanıcılar uygulamadan yazınca burada görünür.</span></div>
+              ) : (
+                <div className="table-wrap"><table className="admin-table"><thead><tr><th scope="col">Konu</th><th scope="col">Kullanıcı</th><th scope="col">Durum</th><th scope="col">Zaman</th><th scope="col"><span className="sr-only">İşlem</span></th></tr></thead><tbody>
+                  {tickets.map((ticket) => (
+                    <tr key={ticket.id}>
+                      <td><strong>{ticket.subject}</strong><small className="row-sub">{ticket.body.slice(0, 80)}{ticket.body.length > 80 ? "…" : ""}</small></td>
+                      <td>{ticket.user?.displayName ?? "—"}</td>
+                      <td><span className={`status-badge ${ticket.status === "OPEN" ? "OPEN" : "REVIEWING"}`}>{ticket.status === "OPEN" ? "Açık" : ticket.status === "ANSWERED" ? "Yanıtlandı" : ticket.status}</span></td>
+                      <td><time dateTime={ticket.createdAt}>{relativeTime(ticket.createdAt)}</time></td>
+                      <td className="row-actions">
+                        <button type="button" className="outline-button small" disabled={pendingAction === `ticket:${ticket.id}`} onClick={() => { setReplyTarget(ticket); setReplyText(ticket.reply ?? ""); }}>Yanıtla</button>
+                        <button type="button" className="outline-button small" disabled={pendingAction === `ticket:${ticket.id}`} onClick={() => void handleCloseTicket(ticket.id)}>Kapat</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody></table></div>
+              )}
+            </article>
+          </section>
+
           <section aria-label="Sunucu yönetimi">
             <article className="panel" id="sunucular">
               <div className="panel-heading"><div><p className="eyebrow">ALTYAPI</p><h2>Sunucular</h2></div><span className="date-badge">{formatNumber(edges.length)}</span></div>
@@ -511,6 +575,19 @@ export default function AdminDashboard() {
             <div className="modal-actions">
               <button type="button" className="outline-button" onClick={() => setDeleteTarget(null)}>Vazgeç</button>
               <button type="button" className="outline-button danger" disabled={pendingAction === `edge:${deleteTarget.id}`} onClick={() => void handleDeleteEdge(deleteTarget.id)}>Sil</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {replyTarget && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Talebi yanıtla">
+          <div className="modal">
+            <h3>{replyTarget.subject}</h3>
+            <p>{replyTarget.body}</p>
+            <label>Yanıtınız<textarea value={replyText} onChange={(event) => setReplyText(event.target.value)} rows={4} maxLength={2000} placeholder="Kullanıcıya yanıt yazın…" /></label>
+            <div className="modal-actions">
+              <button type="button" className="outline-button" onClick={() => setReplyTarget(null)}>Vazgeç</button>
+              <button type="button" className="outline-button" disabled={pendingAction === `ticket:${replyTarget.id}`} onClick={() => void handleReplyTicket()}>Gönder</button>
             </div>
           </div>
         </div>

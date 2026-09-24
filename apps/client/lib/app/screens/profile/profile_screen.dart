@@ -7,6 +7,7 @@ import '../../services/session.dart';
 import '../../theme/app_strings.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_widgets.dart';
+import '../support/support_screen.dart';
 import 'profile_edit_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -157,7 +158,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 _SettingsTile(icon: Icons.shield_outlined, title: 'Güvenlik merkezi', subtitle: 'Engelleme, bildirim ve doğrulama', onTap: () => _openSafety(context)),
                 _SettingsTile(icon: Icons.lock_outline, title: 'Gizlilik ayarları', subtitle: 'Verilerin ve görünürlük tercihlerin', onTap: () => _openPrivacy(context)),
-                _SettingsTile(icon: Icons.help_outline, title: 'Yardım ve destek', subtitle: 'Soruların için buradayız', onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Destek: ${AppStrings.supportMail}')))),
+                _SettingsTile(icon: Icons.help_outline, title: 'Yardım ve destek', subtitle: 'Taleplerin ve yanıtları', onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => SupportScreen(apiClient: widget.apiClient)),
+                    ),),
               ],
             ),
           ),

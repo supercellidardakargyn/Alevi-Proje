@@ -65,6 +65,16 @@ export interface EdgeNode {
   createdAt: string;
 }
 
+export interface SupportTicket {
+  id: string;
+  subject: string;
+  body: string;
+  status: string;
+  reply: string | null;
+  createdAt: string;
+  user?: { id: string; displayName: string };
+}
+
 export interface CreatedEdgeNode extends EdgeNode {
   joinToken: string;
 }
@@ -216,6 +226,22 @@ export class AdminApiClient {
 
   async deleteEdge(edgeId: string): Promise<void> {
     await this.request<unknown>(`/edge/${encodeURIComponent(edgeId)}`, { method: "DELETE" });
+  }
+
+  async getTickets(): Promise<SupportTicket[]> {
+    const body = await this.request<{ data: SupportTicket[] } | SupportTicket[]>("/tickets");
+    return Array.isArray(body) ? body : body.data;
+  }
+
+  async replyTicket(ticketId: string, message: string): Promise<void> {
+    await this.request<unknown>(`/tickets/${encodeURIComponent(ticketId)}/reply`, {
+      method: "POST",
+      body: JSON.stringify({ message })
+    });
+  }
+
+  async closeTicket(ticketId: string): Promise<void> {
+    await this.request<unknown>(`/tickets/${encodeURIComponent(ticketId)}/close`, { method: "POST" });
   }
 }
 

@@ -154,7 +154,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } on GoogleNotConfiguredException {
       _fail('Google girişi henüz yapılandırılmadı. E-posta ile devam et.');
     } on GoogleCancelledException {
-      _fail('Google girişi iptal edildi.');
+      _fail('Google girişi iptal edildi. Tekrar denemek için dokun.');
+    } on GoogleTokenException {
+      _fail('Google kimliği alınamadı. Hesabını seçip tekrar dene.');
     } on ApiException catch (e) {
       _fail(_friendlyError(e));
     } catch (e) {

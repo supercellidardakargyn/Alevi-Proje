@@ -14,6 +14,8 @@ import {
   resetPasswordRequestSchema,
   createEventRequestSchema,
   deviceTokenRequestSchema,
+  createTicketRequestSchema,
+  replyTicketRequestSchema,
   updateProfileRequestSchema
 } from '@alevi/contracts';
 
@@ -151,6 +153,15 @@ describe('contracts: invites and interests', () => {
   it('caps profile interests at 10', () => {
     assert.equal(updateProfileRequestSchema.safeParse({ interests: ['a', 'b'] }).success, true);
     assert.equal(updateProfileRequestSchema.safeParse({ interests: 'muzik' }).success, false);
+  });
+});
+
+describe('contracts: support tickets', () => {
+  it('validates ticket creation and replies', () => {
+    assert.equal(createTicketRequestSchema.safeParse({ subject: 'Giris sorunu', body: 'Sifremi unuttum ama kod gelmiyor, yardim lutfen.' }).success, true);
+    assert.equal(createTicketRequestSchema.safeParse({ subject: 'x', body: 'kisa' }).success, false);
+    assert.equal(replyTicketRequestSchema.safeParse({ message: 'Cozduk, tekrar dene.' }).success, true);
+    assert.equal(replyTicketRequestSchema.safeParse({ message: '' }).success, false);
   });
 });
 

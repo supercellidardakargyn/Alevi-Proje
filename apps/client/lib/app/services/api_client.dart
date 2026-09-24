@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'secure_storage.dart';
 import 'session.dart';
 
 abstract interface class ApiClientPort {
@@ -14,15 +15,21 @@ abstract interface class ApiClientPort {
 }
 
 class ApiClient implements ApiClientPort {
-  ApiClient({required String baseUrl, http.Client? client})
+  ApiClient({required String baseUrl, http.Client? client, SecureStoragePort? storage})
       : _baseUrl = baseUrl.replaceFirst(RegExp(r'/$'), ''),
-        _client = client ?? http.Client();
+        _client = client ?? http.Client(),
+        _storage = storage;
 
   static const _timeout = Duration(seconds: 15);
 
   final String _baseUrl;
   final http.Client _client;
+  final SecureStoragePort? _storage;
   String? _accessToken;
+  Future<bool>? _refreshFlight;
+
+  static bool _isAuthPath(String path) =>
+      path.contains('/v1/auth/') || path.contains('/v1/edge/');
 
   Uri _uri(String path) =>
       Uri.parse('$_baseUrl/${path.replaceFirst(RegExp(r'^/'), '')}');
@@ -39,37 +46,86 @@ class ApiClient implements ApiClientPort {
         if (_accessToken != null) 'authorization': 'Bearer $_accessToken',
       };
 
+  Future<http.Response> _withRefresh(String path, Future<http.Response> Function() send) async {
+    final first = await send();
+    if (first.statusCode != 401 || _accessToken == null || _isAuthPath(path)) return first;
+    final refreshed = await _refreshOnce();
+    if (!refreshed) return first;
+    return send();
+  }
+
+  /// Tek seferlik refresh (paralel 401'ler tek istekte birlesir).
+  /// Basarisizsa oturum tamamen dusurulur, cagiran giris ekranina doner.
+  Future<bool> _refreshOnce() async {
+    final flight = _refreshFlight ??= _doRefresh().whenComplete(() => _refreshFlight = null);
+    return flight;
+  }
+
+  Future<bool> _doRefresh() async {
+    final storage = _storage;
+    if (storage == null) return false;
+    String? refreshToken;
+    try {
+      refreshToken = await storage.read(key: 'refresh_token');
+    } catch (_) {
+      refreshToken = null;
+    }
+    if (refreshToken == null || refreshToken.isEmpty) return false;
+    try {
+      final response = await _client
+          .post(_uri('/v1/auth/refresh'), headers: _headers, body: jsonEncode({'refreshToken': refreshToken}),)
+          .timeout(_timeout);
+      if (response.statusCode < 200 || response.statusCode >= 300) throw const ApiException(401, null);
+      final data = (jsonDecode(response.body) as Map)['data'];
+      final access = (data is Map ? data['accessToken']?.toString() : null);
+      final refresh = (data is Map ? data['refreshToken']?.toString() : null);
+      if (access == null || access.isEmpty) return false;
+      await setAccessToken(access);
+      await storage.write(key: 'access_token', value: access);
+      if (refresh != null && refresh.isNotEmpty) {
+        await storage.write(key: 'refresh_token', value: refresh);
+      }
+      return true;
+    } catch (_) {
+      await setAccessToken(null);
+      Session.clear();
+      try {
+        await storage.delete(key: 'access_token');
+        await storage.delete(key: 'refresh_token');
+      } catch (_) {}
+      return false;
+    }
+  }
+
   @override
   Future<Map<String, dynamic>> get(String path) async {
-    final response =
-        await _client.get(_uri(path), headers: _headers).timeout(_timeout);
+    final response = await _withRefresh(path, () => _client.get(_uri(path), headers: _headers).timeout(_timeout));
     return _decode(response);
   }
 
   @override
   Future<Map<String, dynamic>> post(String path,
       {Map<String, dynamic>? body,}) async {
-    final response = await _client
-        .post(_uri(path),
-            headers: _headers, body: jsonEncode(body ?? <String, dynamic>{}),)
-        .timeout(_timeout);
+    final response = await _withRefresh(
+      path,
+      () => _client.post(_uri(path), headers: _headers, body: jsonEncode(body ?? <String, dynamic>{}),).timeout(_timeout),
+    );
     return _decode(response);
   }
 
   @override
   Future<Map<String, dynamic>> patch(String path,
       {Map<String, dynamic>? body,}) async {
-    final response = await _client
-        .patch(_uri(path),
-            headers: _headers, body: jsonEncode(body ?? <String, dynamic>{}),)
-        .timeout(_timeout);
+    final response = await _withRefresh(
+      path,
+      () => _client.patch(_uri(path), headers: _headers, body: jsonEncode(body ?? <String, dynamic>{}),).timeout(_timeout),
+    );
     return _decode(response);
   }
 
   @override
   Future<void> delete(String path) async {
-    final response =
-        await _client.delete(_uri(path), headers: _headers).timeout(_timeout);
+    final response = await _withRefresh(path, () => _client.delete(_uri(path), headers: _headers).timeout(_timeout));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(response.statusCode, _messageOf(response));
     }

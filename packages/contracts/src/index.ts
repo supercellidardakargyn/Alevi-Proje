@@ -157,6 +157,15 @@ export const deviceTokenRequestSchema = z.object({
   platform: z.enum(['android', 'ios', 'windows']).default('android'),
 });
 
+export const createTicketRequestSchema = z.object({
+  subject: z.string().trim().min(3).max(120),
+  body: z.string().trim().min(10).max(2000),
+});
+
+export const replyTicketRequestSchema = z.object({
+  message: z.string().trim().min(1).max(2000),
+});
+
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
 export type RefreshRequest = z.infer<typeof refreshRequestSchema>;

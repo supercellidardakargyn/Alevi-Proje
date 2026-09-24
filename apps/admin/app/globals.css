@@ -64,7 +64,7 @@ button.nav-item { width:100%; border:0; background:none; cursor:pointer; font:in
 .modal h3 { margin:0 0 8px; font-size:18px; }
 .modal p { margin:0 0 14px; color:#655c5f; font-size:13px; }
 .modal label { display:flex; flex-direction:column; gap:6px; color:#655c5f; font-size:11px; font-weight:700; }
-.modal input { padding:10px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px; }
+.modal input, .modal textarea { padding:10px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px; font-family:inherit; resize:vertical; }
 .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
 .modal-actions .outline-button { width:auto; padding:9px 18px; }
 .mesh-actions { display:grid; gap:10px; }

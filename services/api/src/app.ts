@@ -21,6 +21,7 @@ import { communityRoutes } from './routes/communities';
 import { messageRoutes } from './routes/messages';
 import { mediaRoutes } from './routes/media';
 import { eventRoutes, deviceRoutes } from './routes/events';
+import { supportRoutes, supportAdminRoutes } from './routes/support';
 import { MeshManager } from './mesh/manager';
 import { adminRoutes } from './routes/admin';
 import { edgeRoutes } from './routes/edge';
@@ -120,6 +121,7 @@ export async function createApp(): Promise<AppContext> {
   secured.use('/', mediaRoutes(prisma));
   secured.use('/events', eventRoutes(prisma));
   secured.use('/devices', deviceRoutes(prisma));
+  secured.use('/support', supportRoutes(prisma));
   secured.use('/presence', presenceRoutes(prisma, presence));
   secured.use('/admin', adminRoutes(prisma, mesh));
   app.use('/v1', secured);
