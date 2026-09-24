@@ -111,6 +111,9 @@ app.use(
       if (filePath.endsWith('.apk')) {
         res.setHeader('Content-Type', 'application/vnd.android.package-archive');
         res.setHeader('Cache-Control', 'public, max-age=86400');
+      } else if (filePath.endsWith('.zip')) {
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
       } else if (filePath.endsWith('.html')) {
         res.setHeader('Cache-Control', 'no-cache');
       } else {

@@ -88,15 +88,19 @@ foreach ($f in @($mainTar, $edgeTar)) {
   [pscustomobject]@{ Paket = (Split-Path -Leaf $f); Bayt = $size; SHA256 = $h }
 }
 
-# APK ayri artefakt + butunluk manifestosu (surum takibi icin).
+# APK + Windows zip ayri artefakt + butunluk manifestosu (surum takibi icin).
 $apkSrc = Join-Root 'site/indir/can-meydani.apk'
 if (Test-Path -LiteralPath $apkSrc) {
   Copy-Item -LiteralPath $apkSrc -Destination (Join-Root 'dist/can-meydani.apk') -Force
 }
+$winSrc = Join-Root 'site/indir/can-meydani-windows-x64.zip'
+if (Test-Path -LiteralPath $winSrc) {
+  Copy-Item -LiteralPath $winSrc -Destination (Join-Root 'dist/can-meydani-windows-x64.zip') -Force
+}
 $manifest = Join-Root 'dist/SHA256SUMS.txt'
 Remove-Item -LiteralPath $manifest -Force -ErrorAction SilentlyContinue
 $distDir = Join-Root 'dist'
-foreach ($f in @(Get-ChildItem -LiteralPath $distDir -File | Where-Object { $_.Name -like '*.tar.gz' -or $_.Name -like '*.apk' })) {
+foreach ($f in @(Get-ChildItem -LiteralPath $distDir -File | Where-Object { $_.Name -like '*.tar.gz' -or $_.Name -like '*.apk' -or $_.Name -like '*.zip' })) {
   $h = (Get-FileHash -LiteralPath $f.FullName -Algorithm SHA256).Hash
   Add-Content -LiteralPath $manifest "$h  $($f.Name)"
 }

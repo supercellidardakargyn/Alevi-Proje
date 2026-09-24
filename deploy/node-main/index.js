@@ -251,7 +251,7 @@ async function githubJson(url) {
 }
 
 async function checkForUpdate() {
-  if (process.env.AUTO_UPDATE !== '1') return;
+  if (!isAutoUpdateEnabled()) return;
   try {
     const release = await githubJson(`https://api.github.com/repos/${UPDATE_REPO}/releases/tags/latest`);
     const state = readUpdateState();
@@ -287,8 +287,46 @@ async function applyUpdate(asset) {
   updating = true;
   stopChildren();
   await new Promise((resolve) => setTimeout(resolve, 2000));
+  // CI paketi .env.example tasir; uretim .env'i yedeklenip geri yuklenir.
+  // Elle yuklenen istemci dosyalari (site/indir) da korunur.
+  const envFile = path.join(ROOT, '.env');
+  const envBackup = path.join(ROOT, '.env.update-bak');
+  const indirDir = path.join(ROOT, 'site', 'indir');
+  const indirBackup = path.join(ROOT, '.site-indir-bak');
+  try {
+    if (fs.existsSync(envFile)) fs.copyFileSync(envFile, envBackup);
+  } catch {
+    // Yedek alinamazsa guncelleme yine de dener, .env riske girer.
+  }
+  try {
+    if (fs.existsSync(indirDir)) {
+      fs.rmSync(indirBackup, { recursive: true, force: true });
+      fs.cpSync(indirDir, indirBackup, { recursive: true });
+    }
+  } catch {
+    // Indir yedegi opsiyoneldir.
+  }
   const extract = spawnSync('tar', ['-xzf', tmpFile, '-C', ROOT, '--strip-components=1'], { stdio: 'inherit' });
   fs.rmSync(tmpFile, { force: true });
+  try {
+    if (fs.existsSync(envBackup)) {
+      fs.copyFileSync(envBackup, envFile);
+      fs.rmSync(envBackup, { force: true });
+    }
+  } catch {
+    console.error('[guncelle] .env geri yuklenemedi, .env.update-bak dosyasini kontrol edin.');
+  }
+  try {
+    if (fs.existsSync(indirBackup)) {
+      fs.mkdirSync(indirDir, { recursive: true });
+      for (const entry of fs.readdirSync(indirBackup)) {
+        fs.cpSync(path.join(indirBackup, entry), path.join(indirDir, entry), { recursive: true, force: true });
+      }
+      fs.rmSync(indirBackup, { recursive: true, force: true });
+    }
+  } catch {
+    // Indir geri yuklemesi opsiyoneldir.
+  }
   if (extract.status !== 0) {
     console.error('[guncelle] acma basarisiz, eski surumle devam icin yeniden baslatin.');
     updating = false;

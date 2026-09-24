@@ -2,11 +2,13 @@
   "android": {
     "version": "0.5.0",
     "versionCode": 5,
-    "url": "/indir/can-meydani.apk"
+    "url": "/indir/can-meydani.apk",
+    "sha256": "2312FEF48AEA44A4CCE19A647BABBCB5A6F730A3EF36D78E928D81182CC2038F"
   },
   "windows": {
     "version": "0.5.0",
     "versionCode": 5,
-    "url": "/indir/can-meydani-windows-x64.zip"
+    "url": "/indir/can-meydani-windows-x64.zip",
+    "sha256": "7D40DFC45019978AEE318F2DE0F17649B809DF9D6974831C1A3AF90D17230D5E"
   }
 }
