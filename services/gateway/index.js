@@ -93,6 +93,21 @@ app.use(
   express.static(SITE_DIR, {
     extensions: ['html'],
     setHeaders: (res, filePath) => {
+      const normalized = filePath.split(path.sep).join('/');
+      if (normalized.includes('/web/')) {
+        // Flutter web: CDN (gstatic/fonts) + wasm + Google girisi gerektirir.
+        res.setHeader(
+          'Content-Security-Policy',
+          "default-src 'self' https: data: blob:; " +
+          "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https:; " +
+          "style-src 'self' 'unsafe-inline' https:; " +
+          "font-src 'self' https: data:; " +
+          "img-src 'self' data: blob: https:; " +
+          "connect-src 'self' https: wss:; " +
+          "frame-src https://accounts.google.com; " +
+          "object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+        );
+      }
       if (filePath.endsWith('.apk')) {
         res.setHeader('Content-Type', 'application/vnd.android.package-archive');
         res.setHeader('Cache-Control', 'public, max-age=86400');

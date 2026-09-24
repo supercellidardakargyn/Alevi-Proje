@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 
 /// Google ile giriş akışı.
@@ -14,7 +15,13 @@ import 'package:google_sign_in/google_sign_in.dart';
 class GoogleAuthService {
   GoogleAuthService({required String serverClientId, GoogleSignIn? signIn})
       : _serverClientId = serverClientId,
-        _signIn = signIn ?? GoogleSignIn(serverClientId: serverClientId);
+        _signIn = signIn ??
+            GoogleSignIn(
+              // serverClientId webde yok sayilir; webde Web istemci kimligi
+              // clientId olarak verilir, mobilde serverClientId kullanilir.
+              clientId: kIsWeb ? serverClientId : null,
+              serverClientId: serverClientId,
+            );
 
   final String _serverClientId;
   final GoogleSignIn _signIn;
