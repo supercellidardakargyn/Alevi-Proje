@@ -3,10 +3,11 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'api_client.dart';
 import 'session.dart';
+import 'web_notify_stub.dart' if (dart.library.js_interop) 'web_notify.dart';
 
-/// Uygulama acikken eslesme/sohbet degisikligini yoklayip yerel bildirim
-/// gosterir. Sunucu tarafinda FCM kurulana kadar gecerli cozumdur.
-/// Web'de yerel bildirim destegi yoktur, sessizce devre disi kalir.
+/// Uygulama acikken eslesme/sohbet degisikligini yoklayip bildirim gosterir.
+/// Mobil/masaustunde yerel bildirim, web'de tarayici bildirimi kullanilir.
+/// Sunucu tarafinda FCM kurulana kadar gecerli cozumdur.
 class AppNotifier {
   AppNotifier({required ApiClientPort apiClient, this.onMessageTap}) : _apiClient = apiClient;
 
@@ -14,39 +15,48 @@ class AppNotifier {
   final void Function(String conversationId, String name)? onMessageTap;
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
   bool _started = false;
+  bool _webGranted = false;
   int _lastMatchCount = -1;
   final Map<String, String> _lastPreview = {};
 
   Future<void> start() async {
-    if (_started || kIsWeb) return;
+    if (_started) return;
     _started = true;
     try {
-      const settings = InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-        iOS: DarwinInitializationSettings(),
-        macOS: DarwinInitializationSettings(),
-        linux: LinuxInitializationSettings(defaultActionName: 'Aç'),
-        windows: WindowsInitializationSettings(
-          appName: 'Can Meydanı',
-          appUserModelId: 'com.alevi.client',
-          guid: '8f9e2c1a-3b4d-4e5f-a6b7-c8d9e0f1a2b3',
-        ),
-      );
-      await _plugin.initialize(
-        settings,
-        onDidReceiveNotificationResponse: (response) {
-          final payload = response.payload ?? '';
-          final parts = payload.split(':');
-          if (parts.length >= 3 && parts[0] == 'msg') {
-            onMessageTap?.call(parts[1], parts.sublist(2).join(':'));
-          }
-        },
-      );
-      await _requestPermission();
+      if (kIsWeb) {
+        await _requestWebPermission();
+      } else {
+        const settings = InitializationSettings(
+          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+          iOS: DarwinInitializationSettings(),
+          macOS: DarwinInitializationSettings(),
+          linux: LinuxInitializationSettings(defaultActionName: 'Aç'),
+          windows: WindowsInitializationSettings(
+            appName: 'Can Meydanı',
+            appUserModelId: 'com.alevi.client',
+            guid: '8f9e2c1a-3b4d-4e5f-a6b7-c8d9e0f1a2b3',
+          ),
+        );
+        await _plugin.initialize(
+          settings,
+          onDidReceiveNotificationResponse: (response) {
+            final payload = response.payload ?? '';
+            final parts = payload.split(':');
+            if (parts.length >= 3 && parts[0] == 'msg') {
+              onMessageTap?.call(parts[1], parts.sublist(2).join(':'));
+            }
+          },
+        );
+        await _requestPermission();
+      }
       await _poll();
     } catch (_) {
       _started = false;
     }
+  }
+
+  Future<void> _requestWebPermission() async {
+    _webGranted = await requestWebNotificationPermission();
   }
 
   Future<void> _requestPermission() async {
@@ -83,7 +93,7 @@ class AppNotifier {
     final matchesData = matchesRes['data'];
     final matchCount = matchesData is List ? matchesData.length : 0;
     if (_lastMatchCount >= 0 && matchCount > _lastMatchCount) {
-      await _show('Yeni eşleşmen var', 'Keşfette karşılıklı ilgi oluştu. Sohbete başla.', null);
+      await _show('Yeni eşleşmen var', 'Keşfette karşılıklı ilgi oluştu. Sohbete başla.', null, null);
     }
     _lastMatchCount = matchCount;
 
@@ -102,7 +112,10 @@ class AppNotifier {
       if (Session.openConversationId == id) continue;
       // Kendi mesajim icin bildirim gerekmez.
       if ((last?['senderId']?.toString() ?? '') == Session.currentUserId) continue;
-      await _show(_otherName(conversation), preview, 'msg:$id:${_otherName(conversation)}');
+      final name = _otherName(conversation);
+      await _show(name, preview, 'msg:$id:$name', (String convId, String convName) {
+        onMessageTap?.call(convId, convName);
+      });
     }
   }
 
@@ -119,7 +132,16 @@ class AppNotifier {
     return title.isNotEmpty ? title : 'Can Meydanı';
   }
 
-  Future<void> _show(String title, String body, String? payload) async {
+  Future<void> _show(
+    String title,
+    String body,
+    String? payload,
+    void Function(String conversationId, String name)? tap,
+  ) async {
+    if (kIsWeb) {
+      _showWeb(title, body, payload, tap);
+      return;
+    }
     const details = NotificationDetails(
       android: AndroidNotificationDetails('can_meydani_updates', 'Can Meydanı güncellemeleri', importance: Importance.high),
       iOS: DarwinNotificationDetails(),
@@ -132,6 +154,16 @@ class AppNotifier {
       details,
       payload: payload,
     );
+  }
+
+  void _showWeb(
+    String title,
+    String body,
+    String? payload,
+    void Function(String conversationId, String name)? tap,
+  ) {
+    if (!_webGranted) return;
+    showWebNotification(title, body, payload ?? '', tap);
   }
 
   void stop() {
