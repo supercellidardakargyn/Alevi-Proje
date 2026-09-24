@@ -30,3 +30,6 @@ Thumbs.db
 
 # gecici push betigi (token icerir)
 scripts/git-push-tmp.ps1
+
+# playwright mcp anlik goruntuleri
+.playwright-mcp/
