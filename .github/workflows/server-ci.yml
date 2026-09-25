@@ -89,11 +89,23 @@ jobs:
 
       - name: Typecheck
         working-directory: services/api
-        run: pnpm run typecheck --if-present
+        shell: bash
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.typecheck ? 0 : 1)"; then
+            pnpm run typecheck
+          else
+            echo "typecheck scripti yok, atlaniyor."
+          fi
 
       - name: Unit and integration tests
         working-directory: services/api
-        run: pnpm test --if-present -- --ci
+        shell: bash
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.test ? 0 : 1)"; then
+            pnpm run test -- --ci
+          else
+            echo "test scripti yok, atlaniyor."
+          fi
 
       - name: Dependency audit
         working-directory: services/api
