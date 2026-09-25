@@ -24,17 +24,23 @@ class AleviApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: config.appName,
-      debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
-      darkTheme: buildAppTheme(monochrome: true),
-      themeMode: ThemeMode.system,
-      home: AppEntry(
-        config: config,
-        apiClient: apiClient,
-        storage: storage,
-      ),
+    return ValueListenableBuilder<AppThemeId>(
+      valueListenable: ThemeController.current,
+      builder: (context, themeId, _) {
+        final explicit = themeId != AppThemeId.system;
+        return MaterialApp(
+          title: config.appName,
+          debugShowCheckedModeBanner: false,
+          theme: buildAppTheme(id: explicit ? themeId : AppThemeId.bordo),
+          darkTheme: explicit ? buildAppTheme(id: themeId) : buildAppTheme(monochrome: true),
+          themeMode: explicit ? (themeId == AppThemeId.gece ? ThemeMode.dark : ThemeMode.light) : ThemeMode.system,
+          home: AppEntry(
+            config: config,
+            apiClient: apiClient,
+            storage: storage,
+          ),
+        );
+      },
     );
   }
 }
@@ -69,6 +75,7 @@ class _AppEntryState extends State<AppEntry> {
 
   Future<void> _restore() async {
     final seen = await widget.storage.read(key: 'onboarding_done');
+    await ThemeController.restore(widget.storage);
     String? token;
     try {
       token = await widget.storage.read(key: 'access_token');

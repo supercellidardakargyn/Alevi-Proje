@@ -256,6 +256,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 22),
+          const SectionTitle('Tema'),
+          const SizedBox(height: 10),
+          Card(
+            child: ValueListenableBuilder<AppThemeId>(
+              valueListenable: ThemeController.current,
+              builder: (context, current, _) => RadioGroup<AppThemeId>(
+                groupValue: current,
+                onChanged: (value) {
+                  if (value != null) ThemeController.select(value, widget.storage);
+                },
+                child: Column(
+                  children: [
+                    for (final id in AppThemeId.values)
+                      RadioListTile<AppThemeId>(
+                        value: id,
+                        title: Text(id.label, style: const TextStyle(fontWeight: FontWeight.w700)),
+                        activeColor: AppColors.burgundy,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 22),
           const SectionTitle('Uygulama'),
           const SizedBox(height: 10),
           Card(

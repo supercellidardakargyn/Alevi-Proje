@@ -86,7 +86,19 @@ export const createCommunitySchema = z.object({
 });
 
 export const createPostSchema = z.object({
-  body: z.string().trim().min(1).max(10_000)
+  body: z.string().trim().min(1).max(10_000),
+  imageUrl: z.string().url().max(2048).optional()
+});
+
+export const createCallSchema = z.object({
+  conversationId: uuidSchema,
+  kind: z.enum(['VOICE', 'VIDEO']).default('VOICE')
+});
+
+export const callSignalSchema = z.object({
+  offer: z.record(z.string(), z.unknown()).optional(),
+  answer: z.record(z.string(), z.unknown()).optional(),
+  ice: z.array(z.record(z.string(), z.unknown())).max(50).optional()
 });
 
 export const createConversationSchema = z.object({

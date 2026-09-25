@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../services/api_client.dart';
@@ -7,6 +9,7 @@ import '../services/secure_storage.dart';
 import '../services/update_service.dart';
 import '../theme/app_theme.dart';
 import 'community/community_screen.dart';
+import 'call/call_screen.dart';
 import 'discover/discover_screen.dart';
 import 'matches/matches_screen.dart';
 import 'messages/messages_screen.dart';
@@ -31,6 +34,9 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
   AppNotifier? _notifier;
+  Timer? _callPoller;
+  String? _activeCallId;
+  String? _ringingCallId;
   late final List<Widget> _screens;
 
   @override
@@ -62,6 +68,7 @@ class _MainShellState extends State<MainShell> {
         );
       },
     )..start();
+    _callPoller = Timer.periodic(const Duration(seconds: 10), (_) => _checkIncoming());
     _shareLocation();
     _heartbeat();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -71,8 +78,73 @@ class _MainShellState extends State<MainShell> {
 
   @override
   void dispose() {
+    _callPoller?.cancel();
     _notifier?.stop();
     super.dispose();
+  }
+
+  Future<void> _checkIncoming() async {
+    if (!mounted || _activeCallId != null || _ringingCallId != null) return;
+    try {
+      final result = await widget.apiClient.get('/v1/calls/incoming');
+      final data = result['data'];
+      final list = (data is List ? data : const []).cast<Map<String, dynamic>>();
+      if (list.isEmpty || !mounted) return;
+      final call = list.first;
+      final callId = (call['id'] ?? '').toString();
+      if (callId.isEmpty) return;
+      _ringingCallId = callId;
+      final caller = (call['caller'] as Map?) ?? const {};
+      final name = ((caller['displayName'] ?? '') as String).isEmpty ? 'Bilinmeyen' : (caller['displayName'] as String);
+      final video = (call['kind']?.toString() ?? 'VOICE') == 'VIDEO';
+      final accepted = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: Text('Gelen ${video ? 'görüntülü' : 'sesli'} arama'),
+          content: Text('$name seni arıyor.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Reddet'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Yanıtla'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted) {
+        _ringingCallId = null;
+        return;
+      }
+      if (accepted == true) {
+        _activeCallId = callId;
+        _ringingCallId = null;
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => CallScreen(
+              apiClient: widget.apiClient,
+              callId: callId,
+              peerName: name,
+              isVideo: video,
+              isCaller: false,
+              initialCall: call,
+              onEnded: () => _activeCallId = null,
+            ),
+          ),
+        );
+        _activeCallId = null;
+      } else {
+        try {
+          await widget.apiClient.post('/v1/calls/$callId/decline');
+        } catch (_) {}
+        _ringingCallId = null;
+      }
+    } catch (_) {
+      // Sessiz: sonraki turda tekrar denenir.
+    }
   }
 
   Future<void> _heartbeat() async {

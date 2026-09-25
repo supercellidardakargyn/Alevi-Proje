@@ -7,6 +7,7 @@ import '../../services/api_client.dart';
 import '../../services/session.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_widgets.dart';
+import '../call/call_screen.dart';
 import '../main_shell.dart';
 import '../matches/matches_screen.dart';
 
@@ -291,6 +292,44 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _startCall(bool video) async {
+    if (!_remote || widget.conversationId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Arama için önce sohbet açılmalı.')));
+      return;
+    }
+    try {
+      final result = await widget.apiClient.post('/v1/calls', body: {
+        'conversationId': widget.conversationId,
+        'kind': video ? 'VIDEO' : 'VOICE',
+      },);
+      final data = result['data'];
+      if (!mounted || data is! Map) return;
+      final callId = (data['id'] ?? '').toString();
+      if (callId.isEmpty) return;
+      Session.openConversationId = widget.conversationId;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => CallScreen(
+            apiClient: widget.apiClient,
+            callId: callId,
+            peerName: widget.name,
+            isVideo: video,
+            isCaller: true,
+            initialCall: data.cast<String, dynamic>(),
+          ),
+        ),
+      );
+    } on ApiException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message ?? 'Arama başlatılamadı')));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Arama başlatılamadı')));
+      }
+    }
+  }
+
   Future<void> _send() async {
     final value = _controller.text.trim();
     if (value.isEmpty || _sending) return;
@@ -329,6 +368,16 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       appBar: AppBar(
         title: Row(children: [AvatarCircle(name: widget.name, size: 34, online: true), const SizedBox(width: 10), Text(widget.name)]),
         actions: [
+          IconButton(
+            onPressed: () => _startCall(false),
+            icon: const Icon(Icons.call_outlined),
+            tooltip: 'Sesli arama',
+          ),
+          IconButton(
+            onPressed: () => _startCall(true),
+            icon: const Icon(Icons.videocam_outlined),
+            tooltip: 'Görüntülü arama',
+          ),
           IconButton(onPressed: () => _showSafety(context), icon: const Icon(Icons.shield_outlined), tooltip: 'Güvenlik'),
         ],
       ),

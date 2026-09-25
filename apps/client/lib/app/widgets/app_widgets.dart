@@ -122,6 +122,7 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return SizedBox(
       width: double.infinity,
       height: 54,
@@ -130,7 +131,7 @@ class PrimaryButton extends StatelessWidget {
         icon: icon == null ? const SizedBox.shrink() : Icon(icon),
         label: Text(label),
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.burgundy,
+          backgroundColor: primary,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           textStyle: const TextStyle(fontWeight: FontWeight.w700),

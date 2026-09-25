@@ -10,6 +10,10 @@
 	<string>Can Meydanı</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Yakınındaki insanları ve etkinlikleri göstermek için konumun kullanılır.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Görüntülü arama ve profil fotoğrafı için kameran kullanılır.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Sesli ve görüntülü arama için mikrofonun kullanılır.</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

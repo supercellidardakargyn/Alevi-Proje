@@ -9,6 +9,7 @@ class CommunityPost {
     required this.category,
     this.communityId,
     this.createdAtIso,
+    this.imageUrl,
   });
 
   final String author;
@@ -20,6 +21,7 @@ class CommunityPost {
   final String category;
   final String? communityId;
   final String? createdAtIso;
+  final String? imageUrl;
 }
 
 String relativePostTime(String? iso, String fallback) {

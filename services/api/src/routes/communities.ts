@@ -75,15 +75,16 @@ export function communityRoutes(prisma: PrismaClient): Router {
     const query = req.query as unknown as { limit: number };
     await accessibleCommunity(prisma, communityId, userId(req));
     const posts = await prisma.communityPost.findMany({ where: { communityId }, include: { author: { select: { id: true, displayName: true, avatarUrl: true } } }, orderBy: { createdAt: 'desc' }, take: query.limit });
-    res.json({ data: posts.map((post) => ({ id: post.id, body: decryptText(post.body), createdAt: post.createdAt.toISOString(), author: post.author })) });
+    res.json({ data: posts.map((post) => ({ id: post.id, body: decryptText(post.body), imageUrl: post.imageUrl, createdAt: post.createdAt.toISOString(), author: post.author })) });
   }));
   router.post('/:id/posts', validate(createPostSchema), asyncHandler(async (req, res) => {
     const id = userId(req);
     const communityId = routeParam(req, 'id');
     const { member } = await accessibleCommunity(prisma, communityId, id);
     if (!member) throw new ApiError(403, 'MEMBERSHIP_REQUIRED', 'Join the community before posting');
-    const post = await prisma.communityPost.create({ data: { communityId, authorId: id, body: encryptText(req.body.body) } });
-    res.status(201).json({ data: { ...post, body: req.body.body } });
+    const input = req.body as { body: string; imageUrl?: string };
+    const post = await prisma.communityPost.create({ data: { communityId, authorId: id, body: encryptText(input.body), imageUrl: input.imageUrl ?? null } });
+    res.status(201).json({ data: { ...post, body: input.body } });
   }));
   return router;
 }

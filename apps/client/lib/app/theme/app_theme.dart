@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../services/secure_storage.dart';
+
 abstract final class AppColors {
   static const burgundy = Color(0xFF7A1F3D);
   static const burgundyDark = Color(0xFF4D1228);
@@ -12,16 +14,203 @@ abstract final class AppColors {
   static const error = Color(0xFFB3261E);
 }
 
-ThemeData buildAppTheme({bool monochrome = false}) {
-  final primary = monochrome ? Colors.black : AppColors.burgundy;
-  final surface = monochrome ? const Color(0xFFF5F5F5) : AppColors.cream;
+/// Kullanici temasi: acik paletler + sistem takibi. Kartlar tum temalarda
+/// acik tutulur, boylece sabit yazi renkleri her yerde okunur.
+enum AppThemeId { system, bordo, okyanus, orman, gece }
+
+extension AppThemeLabel on AppThemeId {
+  String get label {
+    switch (this) {
+      case AppThemeId.system:
+        return 'Sistem';
+      case AppThemeId.bordo:
+        return 'Bordo';
+      case AppThemeId.okyanus:
+        return 'Okyanus';
+      case AppThemeId.orman:
+        return 'Orman';
+      case AppThemeId.gece:
+        return 'Gece';
+    }
+  }
+}
+
+class ThemeController {
+  static final ValueNotifier<AppThemeId> current = ValueNotifier(AppThemeId.system);
+
+  static Future<void> restore(SecureStoragePort storage) async {
+    final raw = await storage.read(key: 'theme_id');
+    if (raw == null) return;
+    current.value = AppThemeId.values.firstWhere(
+      (id) => id.name == raw,
+      orElse: () => AppThemeId.system,
+    );
+  }
+
+  static Future<void> select(AppThemeId id, SecureStoragePort storage) async {
+    current.value = id;
+    await storage.write(key: 'theme_id', value: id.name);
+  }
+}
+
+class _Palette {
+  const _Palette({
+    required this.primary,
+    required this.surface,
+    required this.card,
+    required this.navBar,
+    required this.appBarForeground,
+    required this.inputFill,
+    required this.border,
+    required this.snackBar,
+    required this.brightness,
+  });
+
+  final Color primary;
+  final Color surface;
+  final Color card;
+  final Color navBar;
+  final Color appBarForeground;
+  final Color inputFill;
+  final Color border;
+  final Color snackBar;
+  final Brightness brightness;
+}
+
+_Palette _paletteFor(AppThemeId id) {
+  switch (id) {
+    case AppThemeId.okyanus:
+      return const _Palette(
+        primary: Color(0xFF0E7C7B),
+        surface: Color(0xFFEAF4F3),
+        card: Colors.white,
+        navBar: Colors.white,
+        appBarForeground: AppColors.charcoal,
+        inputFill: Colors.white,
+        border: Color(0xFFD3E6E4),
+        snackBar: Color(0xFF123B3B),
+        brightness: Brightness.light,
+      );
+    case AppThemeId.orman:
+      return const _Palette(
+        primary: Color(0xFF3F7A44),
+        surface: Color(0xFFEFF4EA),
+        card: Colors.white,
+        navBar: Colors.white,
+        appBarForeground: AppColors.charcoal,
+        inputFill: Colors.white,
+        border: Color(0xFFD9E5CF),
+        snackBar: Color(0xFF1E3320),
+        brightness: Brightness.light,
+      );
+    case AppThemeId.gece:
+      return const _Palette(
+        primary: AppColors.burgundy,
+        surface: Color(0xFF161318),
+        card: Colors.white,
+        navBar: Color(0xFF1E1A21),
+        appBarForeground: Colors.white,
+        inputFill: Color(0xFF26212B),
+        border: Color(0xFF3A3340),
+        snackBar: Color(0xFF2A242E),
+        brightness: Brightness.dark,
+      );
+    case AppThemeId.system:
+    case AppThemeId.bordo:
+      return const _Palette(
+        primary: AppColors.burgundy,
+        surface: AppColors.cream,
+        card: Colors.white,
+        navBar: Colors.white,
+        appBarForeground: AppColors.charcoal,
+        inputFill: Colors.white,
+        border: AppColors.creamDark,
+        snackBar: AppColors.charcoal,
+        brightness: Brightness.light,
+      );
+  }
+}
+
+ThemeData buildAppTheme({bool monochrome = false, AppThemeId id = AppThemeId.bordo}) {
+  if (monochrome) return _monochromeTheme();
+  final palette = _paletteFor(id);
+  final scheme = ColorScheme.fromSeed(
+    seedColor: palette.primary,
+    brightness: palette.brightness,
+    primary: palette.primary,
+    secondary: AppColors.gold,
+    surface: palette.surface,
+    error: AppColors.error,
+  );
+
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: scheme,
+    scaffoldBackgroundColor: palette.surface,
+    fontFamily: 'Avenir',
+    appBarTheme: AppBarTheme(
+      backgroundColor: palette.surface,
+      foregroundColor: palette.appBarForeground,
+      elevation: 0,
+      centerTitle: false,
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: palette.inputFill,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: palette.border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: palette.primary, width: 1.5),
+      ),
+      labelStyle: const TextStyle(color: AppColors.muted),
+    ),
+    cardTheme: CardThemeData(
+      color: palette.card,
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+    ),
+    chipTheme: ChipThemeData(
+      backgroundColor: palette.border,
+      selectedColor: palette.primary,
+      labelStyle: const TextStyle(color: AppColors.charcoal),
+      secondaryLabelStyle: const TextStyle(color: Colors.white),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: palette.navBar,
+      indicatorColor: palette.border,
+      labelTextStyle: WidgetStateProperty.all(
+        const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+      ),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: palette.snackBar,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    ),
+  );
+}
+
+ThemeData _monochromeTheme() {
+  const primary = Colors.black;
+  const surface = Color(0xFFF5F5F5);
   final scheme = ColorScheme.fromSeed(
     seedColor: primary,
-    brightness: monochrome ? Brightness.dark : Brightness.light,
+    brightness: Brightness.dark,
     primary: primary,
-    secondary: monochrome ? Colors.black87 : AppColors.gold,
+    secondary: Colors.black87,
     surface: surface,
-    error: monochrome ? Colors.black : AppColors.error,
+    error: Colors.black,
   );
 
   return ThemeData(
@@ -29,15 +218,15 @@ ThemeData buildAppTheme({bool monochrome = false}) {
     colorScheme: scheme,
     scaffoldBackgroundColor: surface,
     fontFamily: 'Avenir',
-    appBarTheme: AppBarTheme(
+    appBarTheme: const AppBarTheme(
       backgroundColor: surface,
-      foregroundColor: monochrome ? Colors.black : AppColors.charcoal,
+      foregroundColor: Colors.black,
       elevation: 0,
       centerTitle: false,
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: monochrome ? Colors.white : Colors.white,
+      fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -47,9 +236,9 @@ ThemeData buildAppTheme({bool monochrome = false}) {
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: AppColors.creamDark),
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: AppColors.burgundy, width: 1.5),
+      focusedBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(16)),
+        borderSide: BorderSide(color: Colors.black, width: 1.5),
       ),
       labelStyle: const TextStyle(color: AppColors.muted),
     ),

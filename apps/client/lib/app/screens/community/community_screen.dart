@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../models/community_post.dart';
 import '../../services/api_client.dart';
+import '../../services/session.dart';
 import '../../theme/app_strings.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_widgets.dart';
@@ -61,6 +63,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   time: relativePostTime((item['createdAt'] ?? '').toString(), 'yeni'),
                   title: community.name,
                   body: (item['body'] ?? '').toString(),
+                  imageUrl: (item['imageUrl'] as String?)?.isNotEmpty == true ? (item['imageUrl'] as String) : null,
                   likes: 0,
                   comments: 0,
                   category: 'Topluluk',
@@ -181,70 +184,165 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
+  Future<void> _sharePost(String body, String? imageUrl) async {
+    if (body.isEmpty || _posting) return;
+    setState(() => _posting = true);
+    var shared = false;
+    try {
+      final communityId = await _ensureCommunity();
+      if (communityId == null) throw const ApiException(502, 'Topluluk hazırlanamadı');
+      await widget.apiClient.post(
+        '/v1/communities/$communityId/posts',
+        body: {
+          'body': body,
+          if (imageUrl != null && imageUrl.isNotEmpty) 'imageUrl': imageUrl,
+        },
+      );
+      shared = true;
+    } catch (_) {
+      // API kapaliysa yerel listeye dus, akisi kilitleme.
+    } finally {
+      if (mounted) {
+        setState(() {
+          (shared ? _remotePosts : _localPosts).insert(
+            0,
+            CommunityPost(
+              author: 'Sen',
+              time: 'şimdi',
+              title: 'Yeni paylaşım',
+              body: body,
+              imageUrl: shared ? imageUrl : null,
+              likes: 0,
+              comments: 0,
+              category: 'Şehir & Kültür',
+            ),
+          );
+          _posting = false;
+        });
+      }
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Paylaşımın toplulukla paylaşıldı.')),
+      );
+    }
+  }
+
   void _showComposer(BuildContext context) {
-    final controller = TextEditingController();
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (sheetContext) => Padding(
         padding: EdgeInsets.fromLTRB(24, 8, 24, MediaQuery.of(sheetContext).viewInsets.bottom + 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Yeni paylaşım', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 14),
-            TextField(controller: controller, maxLines: 4, decoration: const InputDecoration(hintText: 'Toplulukla ne paylaşmak istersin?')),
-            const SizedBox(height: 14),
-            PrimaryButton(
-              label: _posting ? 'Paylaşılıyor…' : 'Paylaş',
-              onPressed: _posting
-                  ? null
-                  : () async {
-                      final body = controller.text.trim();
-                      if (body.isEmpty) return;
-                      final messenger = ScaffoldMessenger.of(sheetContext);
-                      final navigator = Navigator.of(sheetContext);
-                      setState(() => _posting = true);
-                      var shared = false;
-                      try {
-                        final communityId = await _ensureCommunity();
-                        if (communityId == null) throw const ApiException(502, 'Topluluk hazırlanamadı');
-                        await widget.apiClient.post('/v1/communities/$communityId/posts', body: {'body': body});
-                        shared = true;
-                      } catch (_) {
-                        // API kapaliysa yerel listeye dus, akisi kilitleme.
-                      } finally {
-                        if (mounted) {
-                          setState(() {
-                            (shared ? _remotePosts : _localPosts).insert(
-                              0,
-                              CommunityPost(
-                                author: 'Sen',
-                                time: 'şimdi',
-                                title: 'Yeni paylaşım',
-                                body: body,
-                                likes: 0,
-                                comments: 0,
-                                category: 'Şehir & Kültür',
-                              ),
-                            );
-                            _posting = false;
-                          });
-                        }
-                      }
-                      navigator.pop();
-                      if (mounted) {
-                        messenger.showSnackBar(
-                          const SnackBar(content: Text('Paylaşımın toplulukla paylaşıldı.')),
-                        );
-                      }
-                    },
-            ),
-          ],
+        child: _ComposerSheet(
+          apiClient: widget.apiClient,
+          busy: _posting,
+          onShare: (body, imageUrl) async {
+            Navigator.of(sheetContext).pop();
+            await _sharePost(body, imageUrl);
+          },
         ),
       ),
+    );
+  }
+}
+
+class _ComposerSheet extends StatefulWidget {
+  const _ComposerSheet({required this.apiClient, required this.busy, required this.onShare});
+
+  final ApiClientPort apiClient;
+  final bool busy;
+  final Future<void> Function(String body, String? imageUrl) onShare;
+
+  @override
+  State<_ComposerSheet> createState() => _ComposerSheetState();
+}
+
+class _ComposerSheetState extends State<_ComposerSheet> {
+  final _controller = TextEditingController();
+  String? _imageUrl;
+  bool _uploading = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _attachPhoto() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1280, imageQuality: 85);
+    if (picked == null) return;
+    setState(() => _uploading = true);
+    try {
+      final bytes = await picked.readAsBytes();
+      final result = await widget.apiClient.upload('/v1/media/uploads', 'file', bytes, 'post.jpg');
+      final data = result['data'];
+      final url = (data is Map ? data['url']?.toString() : null);
+      if (!mounted) return;
+      if (url == null || url.isEmpty) throw const ApiException(502, 'Yükleme başarısız');
+      setState(() => _imageUrl = url);
+    } on ApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Yükleme başarısız')));
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Yükleme başarısız')));
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final resolved = _imageUrl == null ? null : Session.resolveAvatar(_imageUrl);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Yeni paylaşım', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 14),
+        TextField(controller: _controller, maxLines: 4, decoration: const InputDecoration(hintText: 'Toplulukla ne paylaşmak istersin?')),
+        const SizedBox(height: 12),
+        if (resolved != null)
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(resolved, headers: Session.authHeaders, height: 160, width: double.infinity, fit: BoxFit.cover),
+              ),
+              Positioned(
+                top: 6,
+                right: 6,
+                child: GestureDetector(
+                  onTap: () => setState(() => _imageUrl = null),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                    child: const Icon(Icons.close, color: Colors.white, size: 18),
+                  ),
+                ),
+              ),
+            ],
+          )
+        else
+          OutlinedButton.icon(
+            onPressed: _uploading ? null : _attachPhoto,
+            icon: _uploading
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.add_a_photo_outlined),
+            label: Text(_uploading ? 'Yükleniyor…' : 'Fotoğraf ekle'),
+          ),
+        const SizedBox(height: 14),
+        PrimaryButton(
+          label: widget.busy ? 'Paylaşılıyor…' : 'Paylaş',
+          onPressed: widget.busy || _uploading
+              ? null
+              : () {
+                  final body = _controller.text.trim();
+                  if (body.isEmpty) return;
+                  widget.onShare(body, _imageUrl);
+                },
+        ),
+      ],
     );
   }
 }
@@ -462,8 +560,7 @@ class _PostCard extends StatelessWidget {
   final CommunityPost post;
 
   @override
-  Widget build(BuildContext context) {
-    return Card(
+  Widget build(BuildContext context) {    return Card(
       margin: const EdgeInsets.only(bottom: 14),
       child: Padding(
         padding: const EdgeInsets.all(17),
@@ -490,8 +587,35 @@ class _PostCard extends StatelessWidget {
             Text(post.title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
             const SizedBox(height: 7),
             Text(post.body, style: const TextStyle(color: AppColors.muted, height: 1.4)),
+            if (post.imageUrl != null && post.imageUrl!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _PostImage(url: post.imageUrl!),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PostImage extends StatelessWidget {
+  const _PostImage({required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    final resolved = Session.resolveAvatar(url);
+    if (resolved == null) return const SizedBox.shrink();
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Image.network(
+        resolved,
+        headers: Session.authHeaders,
+        height: 200,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
       ),
     );
   }

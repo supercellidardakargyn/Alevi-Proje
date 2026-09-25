@@ -38,8 +38,7 @@ function extFor(mimetype: string): string {
 export function mediaRoutes(prisma: PrismaClient): Router {
   const router = Router();
 
-  router.post('/profile/avatar', upload.single('avatar'), asyncHandler(async (req, res) => {
-    const file = (req as unknown as { file?: Express.Multer.File }).file;
+  router.post('/profile/avatar', upload.single('avatar'), asyncHandler(async (req, res) => {    const file = (req as unknown as { file?: Express.Multer.File }).file;
     if (!file) throw new ApiError(400, 'INVALID_IMAGE', 'A JPEG, PNG or WebP image is required');
     const name = `${randomUUID()}${extFor(file.mimetype)}`;
     await fs.writeFile(join(uploadDir(), name), file.buffer, { mode: 0o600 });
@@ -54,6 +53,14 @@ export function mediaRoutes(prisma: PrismaClient): Router {
       }
     }
     res.status(201).json({ data: { avatarUrl: `/v1/media/${name}` } });
+  }));
+
+  router.post('/uploads', upload.single('file'), asyncHandler(async (req, res) => {
+    const file = (req as unknown as { file?: Express.Multer.File }).file;
+    if (!file) throw new ApiError(400, 'INVALID_IMAGE', 'A JPEG, PNG or WebP image is required');
+    const name = `${randomUUID()}${extFor(file.mimetype)}`;
+    await fs.writeFile(join(uploadDir(), name), file.buffer, { mode: 0o600 });
+    res.status(201).json({ data: { url: `/v1/media/${name}` } });
   }));
 
   router.post('/profile/photos', upload.single('photo'), asyncHandler(async (req, res) => {

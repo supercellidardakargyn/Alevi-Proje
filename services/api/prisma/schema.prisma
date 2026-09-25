@@ -51,6 +51,19 @@ enum UserRole {
   MODERATOR
 }
 
+enum CallKind {
+  VOICE
+  VIDEO
+}
+
+enum CallStatus {
+  RINGING
+  ACCEPTED
+  DECLINED
+  ENDED
+  MISSED
+}
+
 model User {
   id                         String                @id @default(uuid()) @db.Uuid
   email                      String                @unique @db.VarChar(320)
@@ -87,6 +100,8 @@ model User {
   matchesAsB                 Match[]               @relation("matchesAsB")
   conversationMemberships    ConversationMember[]
   sentMessages               Message[]
+  callsMade                  Call[]                   @relation("callsMade")
+  callsReceived              Call[]                   @relation("callsReceived")
   communitiesOwned           Community[]           @relation("communityOwner")
   communityMemberships       CommunityMember[]
   communityPosts             CommunityPost[]
@@ -213,6 +228,7 @@ model CommunityPost {
   communityId String    @map("community_id") @db.Uuid
   authorId    String    @map("author_id") @db.Uuid
   body        String    @db.Text
+  imageUrl    String?   @map("image_url") @db.VarChar(2048)
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
@@ -229,6 +245,7 @@ model Conversation {
   updatedAt DateTime              @updatedAt @map("updated_at")
   members   ConversationMember[]
   messages  Message[]
+  calls     Call[]
 
   @@index([updatedAt])
   @@map("conversations")
@@ -245,6 +262,28 @@ model ConversationMember {
   @@unique([conversationId, userId])
   @@index([userId])
   @@map("conversation_members")
+}
+
+model Call {
+  id             String     @id @default(uuid()) @db.Uuid
+  conversationId String     @map("conversation_id") @db.Uuid
+  callerId       String     @map("caller_id") @db.Uuid
+  calleeId       String     @map("callee_id") @db.Uuid
+  kind           CallKind
+  status         CallStatus @default(RINGING)
+  offer          Json?
+  answer         Json?
+  iceCandidates  Json       @default("[]") @map("ice_candidates")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+  endedAt        DateTime?  @map("ended_at")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  caller         User         @relation("callsMade", fields: [callerId], references: [id], onDelete: Cascade)
+  callee         User         @relation("callsReceived", fields: [calleeId], references: [id], onDelete: Cascade)
+
+  @@index([calleeId, status])
+  @@index([conversationId, createdAt])
+  @@map("calls")
 }
 
 model Message {
