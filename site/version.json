@@ -13,9 +13,9 @@
     "sha256": "C2AA9FB1D9220C0B78504A862FD8A45B23C526A0269D54759299DFD5D9C1F771"
   },
   "linux": {
-    "version": "0.5.2",
-    "versionCode": 7,
+    "version": "0.5.4",
+    "versionCode": 9,
     "url": "/indir/can-meydani-linux-x64.tar.gz",
-    "sha256": "33723591E73883BE04B7CD16ABA7095250A0FCFC818E31BE62ACEA73B467190A"
+    "sha256": "D8692C312325259EE0FC1340F721CF29AE5AA066256D39DBAADFDD91C817C497"
   }
 }
