@@ -64,6 +64,13 @@ jobs:
           npm ci --prefix packages/config
           npm ci --prefix packages/contracts
 
+      - name: Build shared packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run build --prefix packages/config
+          npm run build --prefix packages/contracts
+
       - name: Install API dependencies
         working-directory: services/api
         shell: bash
