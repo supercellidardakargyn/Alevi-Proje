@@ -79,7 +79,13 @@ jobs:
 
       - name: Lint
         working-directory: services/api
-        run: pnpm run lint --if-present
+        shell: bash
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.lint ? 0 : 1)"; then
+            pnpm run lint
+          else
+            echo "lint scripti yok, atlaniyor."
+          fi
 
       - name: Typecheck
         working-directory: services/api
