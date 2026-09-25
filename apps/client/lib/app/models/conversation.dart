@@ -1,3 +1,4 @@
+import '../services/session.dart';
 import '../theme/app_strings.dart';
 
 class Conversation {
@@ -21,7 +22,10 @@ class Conversation {
 
   factory Conversation.fromApi(Map<String, dynamic> json) {
     final members = (json['members'] as List? ?? const []).cast<Map<String, dynamic>>();
-    final names = members.map((member) => (member['displayName'] ?? '').toString()).where((name) => name.isNotEmpty).toList();
+    final others = members.where((member) => (member['id'] ?? '').toString() != (Session.currentUserId ?? '')).toList();
+    // Baslik yoksa yalnizca karsi tarafin adi gosterilir (kendin dahil degil).
+    final shown = others.isNotEmpty ? others : members;
+    final names = shown.map((member) => (member['displayName'] ?? '').toString()).where((name) => name.isNotEmpty).toList();
     final title = (json['title'] ?? '').toString();
     final last = json['lastMessage'] as Map?;
     return Conversation(
