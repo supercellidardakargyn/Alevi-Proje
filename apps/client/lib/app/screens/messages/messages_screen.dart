@@ -411,7 +411,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                         final mine = message.senderId.isNotEmpty
                             ? message.senderId == Session.currentUserId
                             : index.isEven;
-                        final mineColor = mine ? AppColors.burgundy : Colors.white;
+                        final mineColor = mine ? AppColors.burgundy : AppInk.bubble;
                         final textColor = mine ? Colors.white : AppInk.text;
                         return Align(
                           alignment: mine ? Alignment.centerRight : Alignment.centerLeft,

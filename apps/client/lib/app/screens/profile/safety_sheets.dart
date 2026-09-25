@@ -32,39 +32,41 @@ class SafetySheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Güvenlik merkezi', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 8),
-          Text('Can Meydanı’nda kendini güvende hissetmen için kontrol sende.', style: TextStyle(color: AppInk.subtle)),
-          const SizedBox(height: 14),
-          ListTile(
-            leading: const Icon(Icons.verified_user_outlined),
-            title: const Text('Profil doğrulama'),
-            subtitle: Text('E-posta doğrulamalı hesap', style: TextStyle(color: AppInk.subtle, fontSize: 12)),
-            trailing: const Icon(Icons.check_circle, color: AppColors.sage),
-          ),
-          ListTile(
-            leading: const Icon(Icons.block_outlined),
-            title: const Text('Engellenen kişiler'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => BlocksScreen(apiClient: apiClient)),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Güvenlik merkezi', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            Text('Can Meydanı’nda kendini güvende hissetmen için kontrol sende.', style: TextStyle(color: AppInk.subtle)),
+            const SizedBox(height: 14),
+            ListTile(
+              leading: const Icon(Icons.verified_user_outlined),
+              title: const Text('Profil doğrulama'),
+              subtitle: Text('E-posta doğrulamalı hesap', style: TextStyle(color: AppInk.subtle, fontSize: 12)),
+              trailing: const Icon(Icons.check_circle, color: AppColors.sage),
             ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.flag_outlined),
-            title: const Text('Bildirim geçmişi'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => ReportsScreen(apiClient: apiClient)),
+            ListTile(
+              leading: const Icon(Icons.block_outlined),
+              title: const Text('Engellenen kişiler'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => BlocksScreen(apiClient: apiClient)),
+              ),
             ),
-          ),
-        ],
+            ListTile(
+              leading: const Icon(Icons.flag_outlined),
+              title: const Text('Bildirim geçmişi'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => ReportsScreen(apiClient: apiClient)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

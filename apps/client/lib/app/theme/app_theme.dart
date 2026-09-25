@@ -65,16 +65,19 @@ abstract final class AppInk {
   static Color text = AppColors.charcoal;
   static Color subtle = AppColors.muted;
   static Color divider = AppColors.creamDark;
+  static Color bubble = Colors.white;
 
   static void apply(AppThemeId id) {
     if (id == AppThemeId.gece) {
       text = const Color(0xFFF0EAE6);
       subtle = const Color(0xFFB9AEAC);
       divider = const Color(0xFF3A3340);
+      bubble = const Color(0xFF38303F);
     } else {
       text = AppColors.charcoal;
       subtle = AppColors.muted;
       divider = AppColors.creamDark;
+      bubble = Colors.white;
     }
   }
 }
@@ -133,7 +136,7 @@ _Palette _paletteFor(AppThemeId id) {
       return const _Palette(
         primary: AppColors.burgundy,
         surface: Color(0xFF211C24),
-        card: Colors.white,
+        card: Color(0xFF2B2530),
         navBar: Color(0xFF262027),
         appBarForeground: Colors.white,
         inputFill: Color(0xFF2C2631),
@@ -157,8 +160,7 @@ _Palette _paletteFor(AppThemeId id) {
   }
 }
 
-ThemeData buildAppTheme({bool monochrome = false, AppThemeId id = AppThemeId.bordo}) {
-  if (monochrome) return _monochromeTheme();
+ThemeData buildAppTheme({AppThemeId id = AppThemeId.bordo}) {
   final palette = _paletteFor(id);
   final scheme = ColorScheme.fromSeed(
     seedColor: palette.primary,
@@ -207,7 +209,7 @@ ThemeData buildAppTheme({bool monochrome = false, AppThemeId id = AppThemeId.bor
     chipTheme: ChipThemeData(
       backgroundColor: palette.border,
       selectedColor: palette.primary,
-      labelStyle: const TextStyle(color: AppColors.charcoal),
+      labelStyle: TextStyle(color: AppInk.text),
       secondaryLabelStyle: const TextStyle(color: Colors.white),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
@@ -221,76 +223,6 @@ ThemeData buildAppTheme({bool monochrome = false, AppThemeId id = AppThemeId.bor
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: palette.snackBar,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-    ),
-  );
-}
-
-ThemeData _monochromeTheme() {
-  const primary = Colors.black;
-  const surface = Color(0xFFF5F5F5);
-  final scheme = ColorScheme.fromSeed(
-    seedColor: primary,
-    brightness: Brightness.dark,
-    primary: primary,
-    secondary: Colors.black87,
-    surface: surface,
-    error: Colors.black,
-  );
-
-  return ThemeData(
-    useMaterial3: true,
-    colorScheme: scheme,
-    scaffoldBackgroundColor: surface,
-    fontFamily: 'Avenir',
-    appBarTheme: const AppBarTheme(
-      backgroundColor: surface,
-      foregroundColor: Colors.black,
-      elevation: 0,
-      centerTitle: false,
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: AppColors.creamDark),
-      ),
-      focusedBorder: const OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(16)),
-        borderSide: BorderSide(color: Colors.black, width: 1.5),
-      ),
-      labelStyle: const TextStyle(color: AppColors.muted),
-    ),
-    cardTheme: CardThemeData(
-      color: Colors.white,
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-    ),
-    chipTheme: ChipThemeData(
-      backgroundColor: AppColors.creamDark,
-      selectedColor: AppColors.burgundy,
-      labelStyle: const TextStyle(color: AppColors.charcoal),
-      secondaryLabelStyle: const TextStyle(color: Colors.white),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-    ),
-    navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: Colors.white,
-      indicatorColor: AppColors.creamDark,
-      labelTextStyle: WidgetStateProperty.all(
-        const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-      ),
-    ),
-    snackBarTheme: SnackBarThemeData(
-      backgroundColor: AppColors.charcoal,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
     ),

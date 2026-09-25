@@ -3,14 +3,14 @@
     "version": "0.5.6",
     "versionCode": 11,
     "url": "/indir/can-meydani.apk",
-    "sha256": "8D2AF05F847DDACA602E5C23B589CE1C9323D7921EA153718BB12921B2973C02"
+    "sha256": "5F7C006424F2593D6D678A298D077AC5CA9C28DB3BF400CDC5068DE868FE6BCE"
   },
   "windows": {
     "version": "0.5.6",
     "versionCode": 11,
     "url": "/indir/CanMeydani-Kurulum-0.5.6.exe",
     "portableUrl": "/indir/can-meydani-windows-x64.zip",
-    "sha256": "DF6F887A0DB7C8687D554DAC043CB616BD5BEB302963E45748B867570AD2015B"
+    "sha256": "FC0FC3D5697434C59B053D3EAF7F3D0758149809DA492D9334E18A71907968DE"
   },
   "linux": {
     "version": "0.5.4",

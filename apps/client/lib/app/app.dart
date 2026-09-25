@@ -27,13 +27,13 @@ class AleviApp extends StatelessWidget {
     return ValueListenableBuilder<AppThemeId>(
       valueListenable: ThemeController.current,
       builder: (context, themeId, _) {
-        final explicit = themeId != AppThemeId.system;
+        final effective = themeId == AppThemeId.system ? AppThemeId.bordo : themeId;
         return MaterialApp(
           title: config.appName,
           debugShowCheckedModeBanner: false,
-          theme: buildAppTheme(id: explicit ? themeId : AppThemeId.bordo),
-          darkTheme: explicit ? buildAppTheme(id: themeId) : buildAppTheme(monochrome: true),
-          themeMode: explicit ? (themeId == AppThemeId.gece ? ThemeMode.dark : ThemeMode.light) : ThemeMode.system,
+          theme: buildAppTheme(id: effective),
+          darkTheme: buildAppTheme(id: effective),
+          themeMode: effective == AppThemeId.gece ? ThemeMode.dark : ThemeMode.light,
           home: AppEntry(
             config: config,
             apiClient: apiClient,
