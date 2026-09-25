@@ -46,6 +46,35 @@ export function messageRoutes(prisma: PrismaClient): Router {
       select: { id: true }
     });
     if (blocked) throw new ApiError(403, 'BLOCKED', 'This conversation is not available');
+    // Birebir sohbette teklik: ayni ikili arasinda zaten kutu varsa yeniden
+    // acma, en eskiye don (fazlalari mesajlariyla birlestir).
+    if (participantIds.length === 2 && !input.title) {
+      const mine = await prisma.conversation.findMany({
+        where: { members: { some: { userId: currentUserId } }, title: null },
+        include: { members: { select: { userId: true } } },
+        orderBy: { createdAt: 'asc' }
+      });
+      const exact = mine.filter((conversation) =>
+        conversation.members.length === 2 &&
+        conversation.members.every((member) => participantIds.includes(member.userId)));
+      if (exact.length > 0) {
+        const primary = exact[0];
+        const extras = exact.slice(1);
+        if (extras.length > 0) {
+          await prisma.$transaction(async (tx) => {
+            for (const extra of extras) {
+              await tx.message.updateMany({ where: { conversationId: extra.id }, data: { conversationId: primary.id } });
+              await tx.conversationMember.deleteMany({ where: { conversationId: extra.id } });
+              await tx.conversation.delete({ where: { id: extra.id } });
+            }
+            const newest = await tx.message.findFirst({ where: { conversationId: primary.id }, orderBy: { createdAt: 'desc' }, select: { createdAt: true } });
+            if (newest) await tx.conversation.update({ where: { id: primary.id }, data: { updatedAt: newest.createdAt } });
+          });
+        }
+        const full = await prisma.conversation.findUnique({ where: { id: primary.id } });
+        return res.status(200).json({ data: full });
+      }
+    }
     const conversation = await prisma.$transaction(async (tx) => {
       const created = await tx.conversation.create({ data: { title: input.title } });
       await tx.conversationMember.createMany({ data: participantIds.map((participantId) => ({ conversationId: created.id, userId: participantId })) });
