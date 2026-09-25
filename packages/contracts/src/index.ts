@@ -45,6 +45,7 @@ export const updateProfileRequestSchema = z.object({
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
   interests: z.array(z.string().trim().min(1).max(30)).max(10).optional(),
+  photos: z.array(z.string().url().max(2048)).max(6).optional(),
   sensitivePayload: sensitivePayloadSchema.nullable().optional()
 }).strict();
 
@@ -177,6 +178,7 @@ export type PublicProfile = {
   displayName: string;
   bio: string | null;
   avatarUrl: string | null;
+  photos: string[];
   city: string | null;
   interests: string[];
   referred: boolean;

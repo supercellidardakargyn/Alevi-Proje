@@ -38,11 +38,14 @@ class _MainShellState extends State<MainShell> {
     super.initState();
     _screens = [
       CommunityScreen(apiClient: widget.apiClient),
-      DiscoverScreen(apiClient: widget.apiClient),
+      DiscoverScreen(apiClient: widget.apiClient, storage: widget.storage),
       MatchesScreen(apiClient: widget.apiClient),
       MessagesScreen(apiClient: widget.apiClient),
       ProfileScreen(storage: widget.storage, apiClient: widget.apiClient, onLoggedOut: widget.onLoggedOut),
     ];
+    widget.storage.read(key: 'notifications_enabled').then((value) {
+      AppNotifier.enabled = value != 'false';
+    });
     _notifier = AppNotifier(
       apiClient: widget.apiClient,
       onMessageTap: (conversationId, name) {

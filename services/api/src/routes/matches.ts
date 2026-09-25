@@ -45,6 +45,24 @@ export function matchRoutes(prisma: PrismaClient): Router {
     res.status(201).json({ data: { matched: true, match: { id: match.id, status: match.status, user: toPublicProfile(match.userAId === id ? match.userB : match.userA) }, conversationId } });
   }));
 
+  router.delete('/swipes/last', asyncHandler(async (req, res) => {
+    const id = userId(req);
+    // En son kaydirmayi bul.
+    const swipe = await prisma.swipe.findFirst({ where: { fromUserId: id }, orderBy: { updatedAt: 'desc' } });
+    if (!swipe) throw new ApiError(404, 'SWIPE_NOT_FOUND', 'No swipe to undo');
+    const otherId = swipe.toUserId;
+    const [userAId, userBId] = [id, otherId].sort();
+    await prisma.swipe.delete({ where: { id: swipe.id } });
+    // Kaydirmadan sonra olusan eslesmeyi geri al, sohbet korunur.
+    const match = await prisma.match.findFirst({ where: { userAId, userBId, status: 'ACCEPTED', createdAt: { gte: swipe.createdAt } } });
+    let unmatched = false;
+    if (match) {
+      await prisma.match.update({ where: { id: match.id }, data: { status: 'UNMATCHED' } });
+      unmatched = true;
+    }
+    res.json({ data: { undone: true, unmatched, userId: otherId } });
+  }));
+
   router.patch('/:id', validate(matchActionSchema), asyncHandler(async (req, res) => {
     const id = userId(req);
     const matchId = routeParam(req, 'id');

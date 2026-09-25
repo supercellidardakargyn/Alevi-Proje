@@ -11,7 +11,7 @@ abstract interface class ApiClientPort {
   Future<Map<String, dynamic>> patch(String path, {Map<String, dynamic>? body});
   Future<Map<String, dynamic>> upload(String path, String field, List<int> bytes, String filename);
   Future<Map<String, dynamic>> getAbsolute(String url);
-  Future<void> delete(String path);
+  Future<Map<String, dynamic>> delete(String path, {Map<String, dynamic>? body});
   Future<void> setAccessToken(String? token);
   Future<bool> refreshSession();
 }
@@ -132,11 +132,17 @@ class ApiClient implements ApiClientPort {
   }
 
   @override
-  Future<void> delete(String path) async {
-    final response = await _withRefresh(path, () => _client.delete(_uri(path), headers: _headers).timeout(_timeout));
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(response.statusCode, _messageOf(response));
+  Future<Map<String, dynamic>> delete(String path, {Map<String, dynamic>? body}) async {
+    Future<http.Response> send() async {
+      final request = http.Request('DELETE', _uri(path));
+      request.headers.addAll(_headers);
+      if (body != null) request.body = jsonEncode(body);
+      final streamed = await _client.send(request).timeout(_timeout);
+      return http.Response.fromStream(streamed);
     }
+
+    final response = await _withRefresh(path, send);
+    return _decode(response);
   }
 
   @override
@@ -320,5 +326,5 @@ class MockApiClient implements ApiClientPort {
       <String, dynamic>{'android': {'versionCode': 4}};
 
   @override
-  Future<void> delete(String path) async {}
+  Future<Map<String, dynamic>> delete(String path, {Map<String, dynamic>? body}) async => <String, dynamic>{};
 }

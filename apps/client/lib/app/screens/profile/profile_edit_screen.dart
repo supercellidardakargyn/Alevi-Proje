@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../services/api_client.dart';
+import '../../services/session.dart';
+import '../../theme/app_theme.dart';
 import '../../widgets/app_widgets.dart';
 
 class ProfileEditScreen extends StatefulWidget {
@@ -21,9 +23,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   final _cityController = TextEditingController();
   final _interestController = TextEditingController();
   List<String> _interests = const [];
+  List<String> _photos = const [];
   bool _loading = true;
   bool _saving = false;
   bool _uploading = false;
+  bool _galleryBusy = false;
   String? _avatarUrl;
 
   @override
@@ -51,7 +55,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         _cityController.text = (data['city'] ?? '').toString();
         _avatarUrl = data['avatarUrl']?.toString();
         final tags = (data['interests'] as List? ?? const []).map((tag) => tag.toString()).toList();
-        setState(() => _interests = tags);
+        final photos = (data['photos'] as List? ?? const []).map((url) => url.toString()).where((url) => url.isNotEmpty).toList();
+        setState(() {
+          _interests = tags;
+          _photos = photos;
+        });
       }
     } catch (_) {
       // Cevrimdisi modda bos form.
@@ -91,6 +99,45 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     }
   }
 
+  Future<void> _addPhoto() async {
+    if (_photos.length >= 6) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('En fazla 6 fotoğraf ekleyebilirsin.')));
+      return;
+    }
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1024, imageQuality: 85);
+    if (picked == null) return;
+    setState(() => _galleryBusy = true);
+    try {
+      final bytes = await picked.readAsBytes();
+      final result = await widget.apiClient.upload('/v1/media/profile/photos', 'photo', bytes, 'photo.jpg');
+      final data = result['data'];
+      final photos = (data is Map ? data['photos'] as List? : null)?.map((url) => url.toString()).toList();
+      if (!mounted) return;
+      if (photos == null) throw const ApiException(502, 'Yükleme başarısız');
+      setState(() => _photos = photos);
+    } on ApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Yükleme başarısız')));
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Yükleme başarısız')));
+    } finally {
+      if (mounted) setState(() => _galleryBusy = false);
+    }
+  }
+
+  Future<void> _removePhoto(String url) async {
+    setState(() => _galleryBusy = true);
+    try {
+      final result = await widget.apiClient.delete('/v1/media/profile/photos', body: {'url': url});
+      final data = result['data'];
+      final photos = (data is Map ? data['photos'] as List? : null)?.map((item) => item.toString()).toList();
+      if (!mounted) return;
+      setState(() => _photos = photos ?? _photos.where((item) => item != url).toList());
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silinemedi.')));
+    } finally {
+      if (mounted) setState(() => _galleryBusy = false);
+    }
+  }
   Future<void> _save() async {
     if (!_formKey.currentState!.validate() || _saving) return;
     setState(() => _saving = true);
@@ -151,6 +198,56 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       ),
                       const SizedBox(height: 8),
                       TextButton(onPressed: _uploading ? null : _pickAvatar, child: const Text('Fotoğraf seç')),
+                      const SizedBox(height: 16),
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text('Galeri (en fazla 6)', style: TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                      const SizedBox(height: 8),
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 8, mainAxisSpacing: 8),
+                        itemCount: _photos.length >= 6 ? _photos.length : _photos.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index >= _photos.length) {
+                            return GestureDetector(
+                              onTap: _galleryBusy ? null : _addPhoto,
+                              child: Container(
+                                decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(12)),
+                                child: _galleryBusy
+                                    ? const Center(child: CircularProgressIndicator())
+                                    : const Icon(Icons.add_a_photo_outlined, color: AppColors.burgundy, size: 30),
+                              ),
+                            );
+                          }
+                          final url = _photos[index];
+                          final resolved = Session.resolveAvatar(url);
+                          return Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: resolved == null
+                                    ? const ColoredBox(color: Colors.black12)
+                                    : Image.network(resolved, headers: Session.authHeaders, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const ColoredBox(color: Colors.black12)),
+                              ),
+                              Positioned(
+                                top: 2,
+                                right: 2,
+                                child: GestureDetector(
+                                  onTap: _galleryBusy ? null : () => _removePhoto(url),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                    child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _nameController,

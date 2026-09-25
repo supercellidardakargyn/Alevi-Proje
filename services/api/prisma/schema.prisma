@@ -58,6 +58,7 @@ model User {
   displayName                String                @map("display_name") @db.VarChar(80)
   bio                        String?               @db.VarChar(2000)
   avatarUrl                  String?               @map("avatar_url") @db.VarChar(2048)
+  photos                     String[]              @default([]) @map("photos")
   sensitivePayloadCiphertext Bytes?               @map("sensitive_payload_ciphertext")
   sensitivePayloadVersion    Int?                  @map("sensitive_payload_version")
   consentVersion             String                @map("consent_version") @db.VarChar(32)

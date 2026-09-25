@@ -140,13 +140,31 @@ class PrimaryButton extends StatelessWidget {
   }
 }
 
-class ProfileCard extends StatelessWidget {
+class ProfileCard extends StatefulWidget {
   const ProfileCard({super.key, required this.profile});
 
   final Profile profile;
 
   @override
+  State<ProfileCard> createState() => _ProfileCardState();
+}
+
+class _ProfileCardState extends State<ProfileCard> {
+  int _photoIndex = 0;
+
+  List<String> get _photos {
+    final urls = <String>[
+      if (widget.profile.avatarUrl != null && widget.profile.avatarUrl!.isNotEmpty)
+        Session.resolveAvatar(widget.profile.avatarUrl) ?? '',
+      ...widget.profile.photos.map((url) => Session.resolveAvatar(url) ?? ''),
+    ].where((url) => url.isNotEmpty).toList();
+    return urls;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final profile = widget.profile;
+    final photos = _photos;
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -167,13 +185,48 @@ class ProfileCard extends StatelessWidget {
                 const Center(
                   child: Icon(Icons.person_outline, color: AppColors.gold, size: 110),
                 ),
-                if (Session.resolveAvatar(profile.avatarUrl) != null)
+                if (photos.isNotEmpty)
                   Positioned.fill(
-                    child: Image.network(
-                      Session.resolveAvatar(profile.avatarUrl)!,
-                      headers: Session.authHeaders,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    child: PageView.builder(
+                      itemCount: photos.length,
+                      onPageChanged: (index) => setState(() => _photoIndex = index),
+                      itemBuilder: (_, index) => Image.network(
+                        photos[index],
+                        headers: Session.authHeaders,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      ),
+                    ),
+                  ),
+                if (photos.length > 1)
+                  Positioned(
+                    top: 12,
+                    left: 18,
+                    right: 18,
+                    child: Row(
+                      children: [
+                        for (var i = 0; i < photos.length; i++)
+                          Expanded(
+                            child: Container(
+                              height: 3,
+                              margin: EdgeInsets.only(right: i == photos.length - 1 ? 0 : 6),
+                              decoration: BoxDecoration(
+                                color: i == _photoIndex ? Colors.white : Colors.white38,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                if (photos.length > 1)
+                  Positioned(
+                    right: 12,
+                    bottom: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(12)),
+                      child: Text('${_photoIndex + 1}/${photos.length}', style: const TextStyle(color: Colors.white, fontSize: 12)),
                     ),
                   ),
                 Positioned(

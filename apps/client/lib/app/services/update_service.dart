@@ -15,12 +15,19 @@ class UpdateService {
   final ApiClientPort apiClient;
   final SecureStoragePort storage;
 
-  Future<void> checkDaily(BuildContext context) async {
+  Future<void> checkDaily(BuildContext context) => _check(context, force: false);
+
+  /// Ayarlardaki "denetle" dugmesi icin gunluk kilidi atlar.
+  Future<void> checkNow(BuildContext context) => _check(context, force: true);
+
+  Future<void> _check(BuildContext context, {required bool force}) async {
     try {
-      final today = DateTime.now().toIso8601String().substring(0, 10);
-      final last = await storage.read(key: 'update_check_date');
-      if (last == today) return;
-      await storage.write(key: 'update_check_date', value: today);
+      if (!force) {
+        final today = DateTime.now().toIso8601String().substring(0, 10);
+        final last = await storage.read(key: 'update_check_date');
+        if (last == today) return;
+        await storage.write(key: 'update_check_date', value: today);
+      }
       final info = await PackageInfo.fromPlatform();
       final current = int.tryParse(info.buildNumber) ?? 0;
       final result = await apiClient.getAbsolute('https://sonalis.com.tr/version.json');

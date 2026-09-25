@@ -4,9 +4,11 @@ import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
 import { Router } from 'express';
 import multer from 'multer';
+import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
 import { config } from '../config';
 import { ApiError } from '../middleware/errors';
+import { validate } from '../middleware/validation';
 import { asyncHandler, routeParam, userId } from './route-utils';
 
 const ALLOWED = new Map([
@@ -52,6 +54,43 @@ export function mediaRoutes(prisma: PrismaClient): Router {
       }
     }
     res.status(201).json({ data: { avatarUrl: `/v1/media/${name}` } });
+  }));
+
+  router.post('/profile/photos', upload.single('photo'), asyncHandler(async (req, res) => {
+    const file = (req as unknown as { file?: Express.Multer.File }).file;
+    if (!file) throw new ApiError(400, 'INVALID_IMAGE', 'A JPEG, PNG or WebP image is required');
+    const me = await prisma.user.findUnique({ where: { id: userId(req) }, select: { photos: true } });
+    const current: string[] = me?.photos ?? [];
+    const name = `${randomUUID()}${extFor(file.mimetype)}`;
+    const url = `/v1/media/${name}`;
+    if (!current.includes(url)) {
+      if (current.length >= 6) throw new ApiError(400, 'PHOTOS_LIMIT_REACHED', 'Photo gallery is limited to 6 photos');
+      await fs.writeFile(join(uploadDir(), name), file.buffer, { mode: 0o600 });
+      const next = [...current, url];
+      await prisma.user.update({ where: { id: userId(req) }, data: { photos: next } });
+      return res.status(201).json({ data: { photos: next } });
+    }
+    return res.status(201).json({ data: { photos: current } });
+  }));
+
+  router.delete('/profile/photos', validate(z.object({ url: z.string().url().max(2048) })), asyncHandler(async (req, res) => {
+    const input = req.body as { url: string };
+    const me = await prisma.user.findUnique({ where: { id: userId(req) }, select: { photos: true } });
+    const current: string[] = me?.photos ?? [];
+    const next = current.filter((item) => item !== input.url);
+    if (next.length !== current.length) {
+      await prisma.user.update({ where: { id: userId(req) }, data: { photos: next } });
+      // Yerel dosyayi silmeyi dene, olmazsa sessiz gec.
+      if (input.url.startsWith('/v1/media/')) {
+        const file = input.url.slice('/v1/media/'.length);
+        try {
+          await fs.unlink(join(uploadDir(), file));
+        } catch {
+          // Sessiz gecilir.
+        }
+      }
+    }
+    res.json({ data: { photos: next } });
   }));
 
   router.get('/media/:file', asyncHandler(async (req, res) => {

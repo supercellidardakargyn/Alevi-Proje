@@ -4,6 +4,7 @@ import '../../models/profile.dart';
 import '../../models/active_user.dart';
 import '../../services/api_client.dart';
 import '../../services/location_service.dart';
+import '../../services/secure_storage.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_widgets.dart';
 import '../main_shell.dart';
@@ -17,9 +18,10 @@ class _GeoPoint {
 }
 
 class DiscoverScreen extends StatefulWidget {
-  const DiscoverScreen({super.key, required this.apiClient});
+  const DiscoverScreen({super.key, required this.apiClient, required this.storage});
 
   final ApiClientPort apiClient;
+  final SecureStoragePort storage;
 
   @override
   State<DiscoverScreen> createState() => _DiscoverScreenState();
@@ -36,7 +38,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   bool _discoverLoading = true;
   List<ActiveUser> _activeUsers = const [];
   List<Profile> _discoverProfiles = const [];
+  Profile? _lastRemoved;
+  bool _undoBusy = false;
   double _distanceKm = 25;
+  String _cityFilter = '';
   _GeoPoint? _geo;
   bool _filterBusy = false;
   final Set<String> _ageRanges = {'26–35'};
@@ -47,7 +52,19 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   void initState() {
     super.initState();
     _loadActiveUsers();
-    _loadDiscover();
+    _restoreFilters();
+  }
+
+  Future<void> _restoreFilters() async {
+    final city = await widget.storage.read(key: 'discover_city');
+    final distance = await widget.storage.read(key: 'discover_distance');
+    if (!mounted) return;
+    setState(() {
+      if (city != null) _cityFilter = city;
+      final parsed = double.tryParse(distance ?? '');
+      if (parsed != null && parsed >= 1 && parsed <= 100) _distanceKm = parsed;
+    });
+    await _loadDiscover();
   }
 
   Future<void> _loadActiveUsers() async {
@@ -78,6 +95,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   Future<void> _applyFilters() async {
     setState(() => _filterBusy = true);
     try {
+      await widget.storage.write(key: 'discover_city', value: _cityFilter.trim());
+      await widget.storage.write(key: 'discover_distance', value: _distanceKm.round().toString());
       final position = await currentPosition();
       if (position == null) {
         if (!mounted) return;
@@ -111,6 +130,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     });
     try {
       final params = <String, String>{'limit': '20'};
+      if (_cityFilter.trim().isNotEmpty) {
+        params['city'] = _cityFilter.trim();
+      }
       if (_geo != null) {
         params['latitude'] = _geo!.latitude.toString();
         params['longitude'] = _geo!.longitude.toString();
@@ -156,9 +178,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             const SizedBox(height: 18),
             _FilterPanel(
               distanceKm: _distanceKm,
+              city: _cityFilter,
               ageRanges: _ageRanges,
               busy: _filterBusy,
               onDistanceChanged: (value) => setState(() => _distanceKm = value),
+              onCityChanged: (value) => setState(() => _cityFilter = value),
               onAgeToggled: (range) => setState(() {
                 if (_ageRanges.contains(range)) {
                   _ageRanges.remove(range);
@@ -225,6 +249,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Semantics(
+                  button: true,
+                  label: 'Son kaydırmayı geri al',
+                  child: _RoundAction(icon: Icons.undo, color: _lastRemoved == null ? AppColors.muted : AppColors.burgundy, onPressed: (_swipeBusy || _undoBusy || _lastRemoved == null) ? null : _undo),
+                ),
+                const SizedBox(width: 22),
                 Semantics(
                   button: true,
                   label: 'Profili geç',
@@ -301,6 +331,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       }
       if (mounted) {
         setState(() {
+          _lastRemoved = target;
           _discoverProfiles = List.of(_discoverProfiles)..removeAt(_profileIndex % _discoverProfiles.length);
           if (_profileIndex >= _discoverProfiles.length && _profileIndex > 0) _profileIndex = 0;
         });
@@ -319,6 +350,32 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       setState(() => _swipeError = 'Beğeni kaydedilemedi');
     } finally {
       if (mounted) setState(() => _swipeBusy = false);
+    }
+  }
+  Future<void> _undo() async {
+    final removed = _lastRemoved;
+    if (removed == null || _undoBusy) return;
+    setState(() => _undoBusy = true);
+    try {
+      await widget.apiClient.delete('/v1/matches/swipes/last');
+      if (!mounted) return;
+      setState(() {
+        _discoverProfiles = [removed, ..._discoverProfiles];
+        _profileIndex = 0;
+        _lastRemoved = null;
+        _swipeError = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Son kaydırma geri alındı.')));
+    } on ApiException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message ?? 'Geri alınamadı')));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Geri alınamadı')));
+      }
+    } finally {
+      if (mounted) setState(() => _undoBusy = false);
     }
   }
 }
@@ -380,8 +437,10 @@ class _FilterPanel extends StatefulWidget {
   const _FilterPanel({
     required this.onClose,
     required this.distanceKm,
+    required this.city,
     required this.ageRanges,
     required this.onDistanceChanged,
+    required this.onCityChanged,
     required this.onAgeToggled,
     required this.onApply,
     required this.busy,
@@ -389,8 +448,10 @@ class _FilterPanel extends StatefulWidget {
 
   final VoidCallback onClose;
   final double distanceKm;
+  final String city;
   final Set<String> ageRanges;
   final ValueChanged<double> onDistanceChanged;
+  final ValueChanged<String> onCityChanged;
   final ValueChanged<String> onAgeToggled;
   final VoidCallback onApply;
   final bool busy;
@@ -403,11 +464,19 @@ class _FilterPanel extends StatefulWidget {
 
 class _FilterPanelState extends State<_FilterPanel> {
   late double _localDistance;
+  late final TextEditingController _cityController;
 
   @override
   void initState() {
     super.initState();
     _localDistance = widget.distanceKm;
+    _cityController = TextEditingController(text: widget.city);
+  }
+
+  @override
+  void dispose() {
+    _cityController.dispose();
+    super.dispose();
   }
 
   @override
@@ -435,6 +504,16 @@ class _FilterPanelState extends State<_FilterPanel> {
               onChanged: (value) => setState(() => _localDistance = value),
               onChangeEnd: widget.onDistanceChanged,
             ),
+            TextField(
+              controller: _cityController,
+              textInputAction: TextInputAction.done,
+              onChanged: widget.onCityChanged,
+              decoration: const InputDecoration(
+                labelText: 'Şehir filtresi (boş bırakırsan tüm şehirler)',
+                prefixIcon: Icon(Icons.location_on_outlined),
+              ),
+            ),
+            const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               children: [

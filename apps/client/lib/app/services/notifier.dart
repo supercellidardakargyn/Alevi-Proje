@@ -11,6 +11,9 @@ import 'web_notify_stub.dart' if (dart.library.js_interop) 'web_notify.dart';
 class AppNotifier {
   AppNotifier({required ApiClientPort apiClient, this.onMessageTap}) : _apiClient = apiClient;
 
+  /// Ayarlardan kapatilabilir; kapaliyken yoklama surer ama gosterge cikmaz.
+  static bool enabled = true;
+
   final ApiClientPort _apiClient;
   final void Function(String conversationId, String name)? onMessageTap;
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
@@ -138,6 +141,7 @@ class AppNotifier {
     String? payload,
     void Function(String conversationId, String name)? tap,
   ) async {
+    if (!AppNotifier.enabled) return;
     if (kIsWeb) {
       _showWeb(title, body, payload, tap);
       return;

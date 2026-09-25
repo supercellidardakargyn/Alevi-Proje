@@ -20,11 +20,15 @@ export function profileRoutes(prisma: PrismaClient): Router {
     const currentUserId = userId(req);
     const existing = await prisma.user.findFirst({ where: { id: currentUserId, deletedAt: null }, select: { id: true } });
     if (!existing) throw new ApiError(404, 'USER_NOT_FOUND', 'Profile not found');
-    const body = req.body as { displayName?: string; bio?: string | null; avatarUrl?: string | null; city?: string | null; latitude?: number | null; longitude?: number | null; interests?: string[]; sensitivePayload?: Record<string, unknown> | null };
+    const body = req.body as { displayName?: string; bio?: string | null; avatarUrl?: string | null; photos?: string[]; city?: string | null; latitude?: number | null; longitude?: number | null; interests?: string[]; sensitivePayload?: Record<string, unknown> | null };
     const data: Record<string, unknown> = {};
     if (body.displayName !== undefined) data.displayName = body.displayName;
     if (body.bio !== undefined) data.bio = body.bio;
     if (body.avatarUrl !== undefined) data.avatarUrl = body.avatarUrl;
+    if (body.photos !== undefined) {
+      // Galeri URL'lerini temizle, boslari at, en fazla 6 al.
+      data.photos = body.photos.map((url: string) => url.trim()).filter((url: string) => url.length > 0).slice(0, 6);
+    }
     if (body.city !== undefined) data.city = body.city;
     if (body.latitude !== undefined) data.latitude = body.latitude;
     if (body.longitude !== undefined) data.longitude = body.longitude;
