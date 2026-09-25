@@ -258,15 +258,18 @@ class _ProfileCardState extends State<ProfileCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (profile.city.isNotEmpty)
+                if (profile.city.isNotEmpty || profile.district.isNotEmpty)
                   Row(
                     children: [
                       Icon(Icons.location_on_outlined, size: 17, color: AppInk.subtle),
                       const SizedBox(width: 4),
-                      Text(profile.city, style: TextStyle(color: AppInk.subtle)),
+                      Text(
+                        [profile.city, profile.district].where((part) => part.isNotEmpty).join(' · '),
+                        style: TextStyle(color: AppInk.subtle),
+                      ),
                     ],
                   ),
-                if (profile.city.isNotEmpty) const SizedBox(height: 10),
+                if (profile.city.isNotEmpty || profile.district.isNotEmpty) const SizedBox(height: 10),
                 if (profile.bio.isNotEmpty) Text(profile.bio, style: const TextStyle(fontSize: 15, height: 1.35)),
                 if (profile.bio.isNotEmpty) const SizedBox(height: 14),
                 if (profile.referred || profile.sharedEvents > 0 || profile.sharedInterests.isNotEmpty)

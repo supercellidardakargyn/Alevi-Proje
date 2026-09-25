@@ -42,6 +42,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   bool _undoBusy = false;
   double _distanceKm = 25;
   String _cityFilter = '';
+  String _districtFilter = '';
   _GeoPoint? _geo;
   bool _filterBusy = false;
   final Set<String> _ageRanges = {'26–35'};
@@ -57,10 +58,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
   Future<void> _restoreFilters() async {
     final city = await widget.storage.read(key: 'discover_city');
+    final district = await widget.storage.read(key: 'discover_district');
     final distance = await widget.storage.read(key: 'discover_distance');
     if (!mounted) return;
     setState(() {
       if (city != null) _cityFilter = city;
+      if (district != null) _districtFilter = district;
       final parsed = double.tryParse(distance ?? '');
       if (parsed != null && parsed >= 1 && parsed <= 100) _distanceKm = parsed;
     });
@@ -96,6 +99,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     setState(() => _filterBusy = true);
     try {
       await widget.storage.write(key: 'discover_city', value: _cityFilter.trim());
+      await widget.storage.write(key: 'discover_district', value: _districtFilter.trim());
       await widget.storage.write(key: 'discover_distance', value: _distanceKm.round().toString());
       final position = await currentPosition();
       if (position == null) {
@@ -132,6 +136,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       final params = <String, String>{'limit': '20'};
       if (_cityFilter.trim().isNotEmpty) {
         params['city'] = _cityFilter.trim();
+      }
+      if (_districtFilter.trim().isNotEmpty) {
+        params['district'] = _districtFilter.trim();
       }
       if (_geo != null) {
         params['latitude'] = _geo!.latitude.toString();
@@ -179,10 +186,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             _FilterPanel(
               distanceKm: _distanceKm,
               city: _cityFilter,
+              district: _districtFilter,
               ageRanges: _ageRanges,
               busy: _filterBusy,
               onDistanceChanged: (value) => setState(() => _distanceKm = value),
               onCityChanged: (value) => setState(() => _cityFilter = value),
+              onDistrictChanged: (value) => setState(() => _districtFilter = value),
               onAgeToggled: (range) => setState(() {
                 if (_ageRanges.contains(range)) {
                   _ageRanges.remove(range);
@@ -438,9 +447,11 @@ class _FilterPanel extends StatefulWidget {
     required this.onClose,
     required this.distanceKm,
     required this.city,
+    required this.district,
     required this.ageRanges,
     required this.onDistanceChanged,
     required this.onCityChanged,
+    required this.onDistrictChanged,
     required this.onAgeToggled,
     required this.onApply,
     required this.busy,
@@ -449,9 +460,11 @@ class _FilterPanel extends StatefulWidget {
   final VoidCallback onClose;
   final double distanceKm;
   final String city;
+  final String district;
   final Set<String> ageRanges;
   final ValueChanged<double> onDistanceChanged;
   final ValueChanged<String> onCityChanged;
+  final ValueChanged<String> onDistrictChanged;
   final ValueChanged<String> onAgeToggled;
   final VoidCallback onApply;
   final bool busy;
@@ -465,17 +478,20 @@ class _FilterPanel extends StatefulWidget {
 class _FilterPanelState extends State<_FilterPanel> {
   late double _localDistance;
   late final TextEditingController _cityController;
+  late final TextEditingController _districtController;
 
   @override
   void initState() {
     super.initState();
     _localDistance = widget.distanceKm;
     _cityController = TextEditingController(text: widget.city);
+    _districtController = TextEditingController(text: widget.district);
   }
 
   @override
   void dispose() {
     _cityController.dispose();
+    _districtController.dispose();
     super.dispose();
   }
 
@@ -509,8 +525,18 @@ class _FilterPanelState extends State<_FilterPanel> {
               textInputAction: TextInputAction.done,
               onChanged: widget.onCityChanged,
               decoration: const InputDecoration(
-                labelText: 'Şehir filtresi (boş bırakırsan tüm şehirler)',
+                labelText: 'Şehir (boş bırakırsan tüm şehirler)',
                 prefixIcon: Icon(Icons.location_on_outlined),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _districtController,
+              textInputAction: TextInputAction.done,
+              onChanged: widget.onDistrictChanged,
+              decoration: const InputDecoration(
+                labelText: 'İlçe (opsiyonel)',
+                prefixIcon: Icon(Icons.map_outlined),
               ),
             ),
             const SizedBox(height: 8),

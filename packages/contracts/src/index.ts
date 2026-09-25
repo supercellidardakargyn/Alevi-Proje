@@ -42,6 +42,7 @@ export const updateProfileRequestSchema = z.object({
   bio: z.string().trim().max(2000).nullable().optional(),
   avatarUrl: z.string().url().max(2048).nullable().optional(),
   city: z.string().trim().max(120).nullable().optional(),
+  district: z.string().trim().max(120).nullable().optional(),
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
   interests: z.array(z.string().trim().min(1).max(30)).max(10).optional(),
@@ -54,6 +55,7 @@ export const discoverQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
   q: z.string().trim().max(80).optional(),
   city: z.string().trim().max(120).optional(),
+  district: z.string().trim().max(120).optional(),
   latitude: z.coerce.number().min(-90).max(90).optional(),
   longitude: z.coerce.number().min(-180).max(180).optional(),
   maxDistanceKm: z.coerce.number().min(1).max(20000).optional()
@@ -192,6 +194,7 @@ export type PublicProfile = {
   avatarUrl: string | null;
   photos: string[];
   city: string | null;
+  district: string | null;
   interests: string[];
   referred: boolean;
   sharedInterests: string[];

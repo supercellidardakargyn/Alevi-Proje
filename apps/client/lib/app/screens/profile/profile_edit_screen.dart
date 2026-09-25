@@ -21,6 +21,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   final _nameController = TextEditingController();
   final _bioController = TextEditingController();
   final _cityController = TextEditingController();
+  final _districtController = TextEditingController();
   final _interestController = TextEditingController();
   List<String> _interests = const [];
   List<String> _photos = const [];
@@ -41,6 +42,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     _nameController.dispose();
     _bioController.dispose();
     _cityController.dispose();
+    _districtController.dispose();
     _interestController.dispose();
     super.dispose();
   }
@@ -53,6 +55,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         _nameController.text = (data['displayName'] ?? '').toString();
         _bioController.text = (data['bio'] ?? '').toString();
         _cityController.text = (data['city'] ?? '').toString();
+        _districtController.text = (data['district'] ?? '').toString();
         _avatarUrl = data['avatarUrl']?.toString();
         final tags = (data['interests'] as List? ?? const []).map((tag) => tag.toString()).toList();
         final photos = (data['photos'] as List? ?? const []).map((url) => url.toString()).where((url) => url.isNotEmpty).toList();
@@ -146,6 +149,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         'displayName': _nameController.text.trim(),
         'bio': _bioController.text.trim().isEmpty ? null : _bioController.text.trim(),
         'city': _cityController.text.trim().isEmpty ? null : _cityController.text.trim(),
+        'district': _districtController.text.trim().isEmpty ? null : _districtController.text.trim(),
         'interests': _interests,
       },);
       if (!mounted) return;
@@ -258,6 +262,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       TextFormField(
                         controller: _cityController,
                         decoration: const InputDecoration(labelText: 'Şehir', prefixIcon: Icon(Icons.location_on_outlined)),
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _districtController,
+                        decoration: const InputDecoration(labelText: 'İlçe (opsiyonel)', prefixIcon: Icon(Icons.map_outlined)),
                       ),
                       const SizedBox(height: 14),
                       TextFormField(

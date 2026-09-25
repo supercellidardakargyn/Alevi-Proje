@@ -78,6 +78,7 @@ model User {
   emailVerified              Boolean               @default(false) @map("email_verified")
   googleSub                  String?               @unique @map("google_sub") @db.VarChar(255)
   city                       String?               @db.VarChar(120)
+  district                   String?               @db.VarChar(120)
   latitude                   Float?
   longitude                  Float?
   interests                  String[]              @default([])

@@ -29,10 +29,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _notifications = true;
   bool _showOnline = true;
   String _city = '';
+  String _district = '';
   double _distanceKm = 25;
   String _appVersion = '';
   bool _checkingUpdate = false;
   final _cityController = TextEditingController();
+  final _districtController = TextEditingController();
 
   @override
   void initState() {
@@ -43,6 +45,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     _cityController.dispose();
+    _districtController.dispose();
     super.dispose();
   }
 
@@ -50,6 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final notifications = await widget.storage.read(key: 'notifications_enabled');
     final online = await widget.storage.read(key: 'show_online');
     final city = await widget.storage.read(key: 'discover_city');
+    final district = await widget.storage.read(key: 'discover_district');
     final distance = await widget.storage.read(key: 'discover_distance');
     String version = '';
     try {
@@ -65,6 +69,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (city != null) {
         _city = city;
         _cityController.text = city;
+      }
+      if (district != null) {
+        _district = district;
+        _districtController.text = district;
       }
       final parsed = double.tryParse(distance ?? '');
       if (parsed != null && parsed >= 1 && parsed <= 100) _distanceKm = parsed;
@@ -88,6 +96,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _saveDiscovery() async {
     await widget.storage.write(key: 'discover_city', value: _city.trim());
+    await widget.storage.write(key: 'discover_district', value: _district.trim());
     await widget.storage.write(key: 'discover_distance', value: _distanceKm.round().toString());
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Keşfet tercihlerin kaydedildi.')));
@@ -168,6 +177,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     textInputAction: TextInputAction.done,
                     onChanged: (value) => _city = value,
                     decoration: const InputDecoration(labelText: 'Şehir (boşsa tüm şehirler)', prefixIcon: Icon(Icons.location_on_outlined)),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _districtController,
+                    textInputAction: TextInputAction.done,
+                    onChanged: (value) => _district = value,
+                    decoration: const InputDecoration(labelText: 'İlçe (opsiyonel)', prefixIcon: Icon(Icons.map_outlined)),
                   ),
                   const SizedBox(height: 8),
                   Text('Mesafe: ${_distanceKm.round()} km', style: TextStyle(color: AppInk.subtle)),
@@ -392,6 +408,7 @@ class _MyDataScreenState extends State<MyDataScreen> {
                         children: [
                           _row('Görünen ad', (profile?['displayName'] ?? '—').toString()),
                           _row('Şehir', (profile?['city'] ?? '—').toString()),
+                          _row('İlçe', (profile?['district'] ?? '—').toString()),
                           _row('Hakkımda', (profile?['bio'] ?? '—').toString()),
                           _row('İlgi alanları', ((profile?['interests'] as List?) ?? const []).join(', ').ifEmpty('—')),
                           _row('Eşleşme sayısı', '$_matchCount'),

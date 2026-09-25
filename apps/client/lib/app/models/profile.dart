@@ -5,6 +5,7 @@ class Profile {
     required this.name,
     this.age = 0,
     this.city = '',
+    this.district = '',
     this.bio = '',
     this.interests = const [],
     this.verified = false,
@@ -19,6 +20,7 @@ class Profile {
   final String name;
   final int age;
   final String city;
+  final String district;
   final String bio;
   final List<String> interests;
   final bool verified;
@@ -38,6 +40,7 @@ class Profile {
       name: (json['displayName'] ?? AppStrings.unknownUser).toString(),
       bio: (json['bio'] ?? '').toString(),
       city: (json['city'] ?? '').toString(),
+      district: (json['district'] ?? '').toString(),
       avatarUrl: json['avatarUrl']?.toString(),
       photos: photos,
       interests: interests,
