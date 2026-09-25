@@ -19,7 +19,7 @@ class SettingsTile extends StatelessWidget {
       onTap: onTap,
       leading: Icon(icon, color: AppColors.burgundy),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-      subtitle: Text(subtitle, style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+      subtitle: Text(subtitle, style: TextStyle(color: AppInk.subtle, fontSize: 12)),
       trailing: const Icon(Icons.chevron_right),
     );
   }
@@ -40,13 +40,13 @@ class SafetySheet extends StatelessWidget {
         children: [
           const Text('Güvenlik merkezi', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
-          const Text('Can Meydanı’nda kendini güvende hissetmen için kontrol sende.', style: TextStyle(color: AppColors.muted)),
+          Text('Can Meydanı’nda kendini güvende hissetmen için kontrol sende.', style: TextStyle(color: AppInk.subtle)),
           const SizedBox(height: 14),
-          const ListTile(
-            leading: Icon(Icons.verified_user_outlined),
-            title: Text('Profil doğrulama'),
-            subtitle: Text('E-posta doğrulamalı hesap', style: TextStyle(color: AppColors.muted, fontSize: 12)),
-            trailing: Icon(Icons.check_circle, color: AppColors.sage),
+          ListTile(
+            leading: const Icon(Icons.verified_user_outlined),
+            title: const Text('Profil doğrulama'),
+            subtitle: Text('E-posta doğrulamalı hesap', style: TextStyle(color: AppInk.subtle, fontSize: 12)),
+            trailing: const Icon(Icons.check_circle, color: AppColors.sage),
           ),
           ListTile(
             leading: const Icon(Icons.block_outlined),
@@ -135,7 +135,7 @@ class _BlocksScreenState extends State<BlocksScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(_error!, style: const TextStyle(color: AppColors.muted)),
+                      Text(_error!, style: TextStyle(color: AppInk.subtle)),
                       TextButton(onPressed: _load, child: const Text('Tekrar dene')),
                     ],
                   ),
@@ -221,7 +221,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(_error!, style: const TextStyle(color: AppColors.muted)),
+                      Text(_error!, style: TextStyle(color: AppInk.subtle)),
                       TextButton(onPressed: _load, child: const Text('Tekrar dene')),
                     ],
                   ),
@@ -242,7 +242,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           child: ListTile(
                             leading: const Icon(Icons.flag_outlined, color: AppColors.burgundy),
                             title: Text((report['reason'] ?? '').toString(), style: const TextStyle(fontWeight: FontWeight.w700)),
-                            subtitle: Text((report['status'] ?? '').toString(), style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+                            subtitle: Text((report['status'] ?? '').toString(), style: TextStyle(color: AppInk.subtle, fontSize: 12)),
                           ),
                         );
                       },

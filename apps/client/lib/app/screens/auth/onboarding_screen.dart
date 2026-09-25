@@ -80,15 +80,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               .headlineSmall
                               ?.copyWith(
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.charcoal,
+                                color: AppInk.text,
                               ),
                         ),
                         const SizedBox(height: 14),
                         Text(
                           slide.body,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                              color: AppColors.muted,
+                          style: TextStyle(
+                              color: AppInk.subtle,
                               height: 1.45,
                               fontSize: 16,),
                         ),
@@ -108,7 +108,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         decoration: BoxDecoration(
                           color: index == _page
                               ? AppColors.burgundy
-                              : AppColors.creamDark,
+                              : AppInk.divider,
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),

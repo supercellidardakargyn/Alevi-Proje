@@ -204,7 +204,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 : _activeError != null
                     ? Row(
                         children: [
-                          Expanded(child: Text(_activeError!, style: const TextStyle(color: AppColors.muted))),
+                          Expanded(child: Text(_activeError!, style: TextStyle(color: AppInk.subtle))),
                           TextButton(onPressed: _loadActiveUsers, child: const Text('Tekrar dene')),
                         ],
                       )
@@ -229,7 +229,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           else if (_discoverError != null)
             Row(
               children: [
-                Expanded(child: Text(_discoverError!, style: const TextStyle(color: AppColors.muted))),
+                Expanded(child: Text(_discoverError!, style: TextStyle(color: AppInk.subtle))),
                 TextButton(onPressed: _loadDiscover, child: const Text('Tekrar dene')),
               ],
             )
@@ -252,13 +252,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 Semantics(
                   button: true,
                   label: 'Son kaydırmayı geri al',
-                  child: _RoundAction(icon: Icons.undo, color: _lastRemoved == null ? AppColors.muted : AppColors.burgundy, onPressed: (_swipeBusy || _undoBusy || _lastRemoved == null) ? null : _undo),
+                  child: _RoundAction(icon: Icons.undo, color: _lastRemoved == null ? AppInk.subtle : AppColors.burgundy, onPressed: (_swipeBusy || _undoBusy || _lastRemoved == null) ? null : _undo),
                 ),
                 const SizedBox(width: 22),
                 Semantics(
                   button: true,
                   label: 'Profili geç',
-                  child: _RoundAction(icon: Icons.close, color: AppColors.charcoal, onPressed: _swipeBusy ? null : () => _swipe('PASS')),
+                  child: _RoundAction(icon: Icons.close, color: AppInk.text, onPressed: _swipeBusy ? null : () => _swipe('PASS')),
                 ),
                 const SizedBox(width: 22),
                 Semantics(
@@ -419,7 +419,7 @@ class _TopicCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.creamDark),
+        border: Border.all(color: AppInk.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -494,7 +494,7 @@ class _FilterPanelState extends State<_FilterPanel> {
                 IconButton(onPressed: widget.onClose, icon: const Icon(Icons.close), tooltip: 'Filtreleri kapat'),
               ],
             ),
-            Text('Mesafe: ${_localDistance.round()} km', style: const TextStyle(color: AppColors.muted)),
+            Text('Mesafe: ${_localDistance.round()} km', style: TextStyle(color: AppInk.subtle)),
             Slider(
               value: _localDistance,
               min: 1,

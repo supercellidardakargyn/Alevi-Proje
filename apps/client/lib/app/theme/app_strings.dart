@@ -7,5 +7,5 @@ abstract final class AppStrings {
   static const mockUser = 'Mock Kullanıcı';
   static const noMessagesYet = 'Henüz mesaj yok';
   static const supportMail = 'destek@sonalis.com.tr';
-  static const appVersion = 'Can Meydanı · v0.5.4';
+  static const appVersion = 'Can Meydanı · v0.5.5';
 }

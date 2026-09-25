@@ -133,7 +133,7 @@ class _VerifyScreenState extends State<VerifyScreen> {
                   Text(
                     '${widget.email} adresine 6 haneli kod gönderdik. 10 dakika geçerli.',
                     style:
-                        const TextStyle(color: AppColors.muted, fontSize: 15),
+                        TextStyle(color: AppInk.subtle, fontSize: 15),
                   ),
                   const SizedBox(height: 28),
                   TextField(

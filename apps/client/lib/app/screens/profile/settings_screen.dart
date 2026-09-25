@@ -150,7 +150,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: _notifications,
               onChanged: _setNotifications,
               title: const Text('Bildirimleri aç', style: TextStyle(fontWeight: FontWeight.w700)),
-              subtitle: const Text('Eşleşme ve yeni mesaj uyarıları', style: TextStyle(color: AppColors.muted)),
+              subtitle: Text('Eşleşme ve yeni mesaj uyarıları', style: TextStyle(color: AppInk.subtle)),
               secondary: const Icon(Icons.notifications_outlined, color: AppColors.burgundy),
             ),
           ),
@@ -170,7 +170,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     decoration: const InputDecoration(labelText: 'Şehir (boşsa tüm şehirler)', prefixIcon: Icon(Icons.location_on_outlined)),
                   ),
                   const SizedBox(height: 8),
-                  Text('Mesafe: ${_distanceKm.round()} km', style: const TextStyle(color: AppColors.muted)),
+                  Text('Mesafe: ${_distanceKm.round()} km', style: TextStyle(color: AppInk.subtle)),
                   Slider(
                     value: _distanceKm,
                     min: 1,
@@ -374,7 +374,7 @@ class _MyDataScreenState extends State<MyDataScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(_error!, style: const TextStyle(color: AppColors.muted)),
+                      Text(_error!, style: TextStyle(color: AppInk.subtle)),
                       TextButton(onPressed: _load, child: const Text('Tekrar dene')),
                     ],
                   ),
@@ -382,9 +382,9 @@ class _MyDataScreenState extends State<MyDataScreen> {
               : ListView(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
                   children: [
-                    const Text(
+                    Text(
                       'Hesabınla saklanan bilgiler. Düzeltme/silme talebi için destekten yaz, 30 günde yanıtlanır.',
-                      style: TextStyle(color: AppColors.muted),
+                      style: TextStyle(color: AppInk.subtle),
                     ),
                     const SizedBox(height: 12),
                     Card(
@@ -415,7 +415,7 @@ class _MyDataScreenState extends State<MyDataScreen> {
 
   Widget _row(String label, String value) {
     return ListTile(
-      title: Text(label, style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+      title: Text(label, style: TextStyle(color: AppInk.subtle, fontSize: 12)),
       subtitle: Text(value.isEmpty ? '—' : value, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
     );
   }

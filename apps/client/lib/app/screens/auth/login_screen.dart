@@ -196,7 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 8),
                 Text(
                   _isLogin ? 'Bağlantılarına kaldığın yerden devam et.' : 'Güvenli ve samimi bir topluluk seni bekliyor.',
-                  style: const TextStyle(color: AppColors.muted, fontSize: 15),
+                  style: TextStyle(color: AppInk.subtle, fontSize: 15),
                 ),
                 const SizedBox(height: 28),
                 TextFormField(
@@ -290,11 +290,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: _submitBusy ? null : _submit,
                 ),
                 const SizedBox(height: 20),
-                const Row(
+                Row(
                   children: [
-                    Expanded(child: Divider()),
-                    Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('veya', style: TextStyle(color: AppColors.muted))),
-                    Expanded(child: Divider()),
+                    const Expanded(child: Divider()),
+                    Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: Text('veya', style: TextStyle(color: AppInk.subtle))),
+                    const Expanded(child: Divider()),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -347,14 +347,14 @@ class _LoginScreenState extends State<LoginScreen> {
         builder: (_, controller) => SingleChildScrollView(
           controller: controller,
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('KVKK Aydınlatma Metni (özet)', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-              SizedBox(height: 12),
+              const Text('KVKK Aydınlatma Metni (özet)', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 12),
               Text(
                 'Veri sorumlusu: sonalis.com.tr. E-posta, görünen ad, profil bilgileri ve kullanım verilerin; hesap işletimi, güvenlik ve moderasyon amacıyla işlenir. Dini/kültürel alanlar isteğe bağlıdır, şifreli saklanır ve keşfette kullanılmaz. Verilerin satılmaz, reklamcılarla paylaşılmaz. Erişim, düzeltme ve silme için kvkk@sonalis.com.tr adresine yazabilir, hesabını uygulamadan silebilirsin. Tam metin: sonalis.com.tr/gizlilik.html',
-                style: TextStyle(color: AppColors.muted, height: 1.5),
+                style: TextStyle(color: AppInk.subtle, height: 1.5),
               ),
             ],
           ),
@@ -367,16 +367,16 @@ class _LoginScreenState extends State<LoginScreen> {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      builder: (context) => const SingleChildScrollView(
+      builder: (context) => SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.fromLTRB(24, 8, 24, 32),
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Güvenlik ilkeleri', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-              SizedBox(height: 12),
-              Text('Verilerin kontrolü sende. İstediğin zaman görünürlüğünü düzenleyebilir, kişileri engelleyebilir ve bildirebilirsin.', style: TextStyle(color: AppColors.muted, height: 1.4)),
+              const Text('Güvenlik ilkeleri', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 12),
+              Text('Verilerin kontrolü sende. İstediğin zaman görünürlüğünü düzenleyebilir, kişileri engelleyebilir ve bildirebilirsin.', style: TextStyle(color: AppInk.subtle, height: 1.4)),
             ],
           ),
         ),

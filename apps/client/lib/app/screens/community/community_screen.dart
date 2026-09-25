@@ -165,7 +165,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           else if (_error != null)
             Row(
               children: [
-                Expanded(child: Text(_error!, style: const TextStyle(color: AppColors.muted))),
+                Expanded(child: Text(_error!, style: TextStyle(color: AppInk.subtle))),
                 TextButton(onPressed: _load, child: const Text('Tekrar dene')),
               ],
             )
@@ -497,7 +497,7 @@ class _EventsSectionState extends State<_EventsSection> {
         else if (_error != null)
           Row(
             children: [
-              Expanded(child: Text(_error!, style: const TextStyle(color: AppColors.muted))),
+              Expanded(child: Text(_error!, style: TextStyle(color: AppInk.subtle))),
               TextButton(onPressed: _load, child: const Text('Tekrar dene')),
             ],
           )
@@ -517,7 +517,7 @@ class _EventsSectionState extends State<_EventsSection> {
                 title: Text(event.title, style: const TextStyle(fontWeight: FontWeight.w800)),
                 subtitle: Text(
                   [if (event.city.isNotEmpty) event.city, '${event.attendeeCount} katılımcı'].join(' · '),
-                  style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                  style: TextStyle(color: AppInk.subtle, fontSize: 12),
                 ),
                 trailing: OutlinedButton(
                   onPressed: () => _toggleJoin(event),
@@ -547,7 +547,7 @@ class _CommunityFilter extends StatelessWidget {
         selected: selected,
         onSelected: (_) => onSelected?.call(),
         selectedColor: AppColors.burgundy,
-        labelStyle: TextStyle(color: selected ? Colors.white : AppColors.charcoal, fontWeight: FontWeight.w600),
+        labelStyle: TextStyle(color: selected ? Colors.white : AppInk.text, fontWeight: FontWeight.w600),
         checkmarkColor: Colors.white,
       ),
     );
@@ -576,17 +576,17 @@ class _PostCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(post.author, style: const TextStyle(fontWeight: FontWeight.w800)),
-                      Text('${post.category} · ${post.time}', style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+                      Text('${post.category} · ${post.time}', style: TextStyle(color: AppInk.subtle, fontSize: 12)),
                     ],
                   ),
                 ),
-                const Icon(Icons.more_horiz, color: AppColors.muted),
+                Icon(Icons.more_horiz, color: AppInk.subtle),
               ],
             ),
             const SizedBox(height: 16),
             Text(post.title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
             const SizedBox(height: 7),
-            Text(post.body, style: const TextStyle(color: AppColors.muted, height: 1.4)),
+            Text(post.body, style: TextStyle(color: AppInk.subtle, height: 1.4)),
             if (post.imageUrl != null && post.imageUrl!.isNotEmpty) ...[
               const SizedBox(height: 12),
               _PostImage(url: post.imageUrl!),

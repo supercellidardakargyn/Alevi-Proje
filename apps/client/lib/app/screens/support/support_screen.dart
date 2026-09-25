@@ -117,7 +117,7 @@ class _SupportScreenState extends State<SupportScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(_error!, style: const TextStyle(color: AppColors.muted)),
+                      Text(_error!, style: TextStyle(color: AppInk.subtle)),
                       TextButton(onPressed: _load, child: const Text('Tekrar dene')),
                     ],
                   ),
@@ -156,7 +156,7 @@ class _SupportScreenState extends State<SupportScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 8),
-                                Text((ticket['body'] ?? '').toString(), style: const TextStyle(color: AppColors.muted)),
+                                Text((ticket['body'] ?? '').toString(), style: TextStyle(color: AppInk.subtle)),
                                 if (reply.isNotEmpty) ...[
                                   const SizedBox(height: 12),
                                   Container(

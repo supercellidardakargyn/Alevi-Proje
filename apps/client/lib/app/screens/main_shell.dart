@@ -272,10 +272,10 @@ class ScreenHeader extends StatelessWidget {
             children: [
               Text(title,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800, color: AppColors.charcoal,),),
+                      fontWeight: FontWeight.w800, color: AppInk.text,),),
               if (subtitle != null) ...[
                 const SizedBox(height: 5),
-                Text(subtitle!, style: const TextStyle(color: AppColors.muted)),
+                Text(subtitle!, style: TextStyle(color: AppInk.subtle)),
               ],
             ],
           ),

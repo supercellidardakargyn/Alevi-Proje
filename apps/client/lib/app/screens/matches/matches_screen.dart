@@ -105,7 +105,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
           else if (_error != null && _matches.isEmpty)
             Row(
               children: [
-                Expanded(child: Text(_error!, style: const TextStyle(color: AppColors.muted))),
+                Expanded(child: Text(_error!, style: TextStyle(color: AppInk.subtle))),
                 TextButton(onPressed: _loadMatches, child: const Text('Tekrar dene')),
               ],
             )
@@ -135,7 +135,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
               ),
             ),
             const SizedBox(height: 18),
-            const Divider(color: AppColors.creamDark),
+            Divider(color: AppInk.divider),
             const SizedBox(height: 18),
             const SectionTitle('Yeni eşleşmeler'),
             const SizedBox(height: 12),
@@ -161,7 +161,7 @@ class _MatchTile extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         leading: AvatarCircle(name: profile.name, size: 52, online: true),
         title: Text(profile.age > 0 ? '${profile.name}, ${profile.age}' : profile.name, style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: Text(profile.city.isEmpty ? 'Can Meydanı üyesi' : profile.city, style: const TextStyle(color: AppColors.muted)),
+        subtitle: Text(profile.city.isEmpty ? 'Can Meydanı üyesi' : profile.city, style: TextStyle(color: AppInk.subtle)),
         trailing: IconButton(
           onPressed: onOpen,
           icon: const Icon(Icons.chat_bubble_outline, color: AppColors.burgundy),

@@ -93,9 +93,9 @@ class _ForgotScreenState extends State<ForgotScreen> {
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Kod 10 dakika geçerli. Sıfırlayınca tüm cihazlardan çıkış yapılır.',
-                      style: TextStyle(color: AppColors.muted, fontSize: 15),
+                      style: TextStyle(color: AppInk.subtle, fontSize: 15),
                     ),
                     const SizedBox(height: 28),
                     TextFormField(

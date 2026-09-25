@@ -93,7 +93,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
             else if (_error != null && conversations.isEmpty)
               Row(
                 children: [
-                  Expanded(child: Text(_error!, style: const TextStyle(color: AppColors.muted))),
+                  Expanded(child: Text(_error!, style: TextStyle(color: AppInk.subtle))),
                   TextButton(onPressed: _load, child: const Text('Tekrar dene')),
                 ],
               )
@@ -155,7 +155,7 @@ class _ConversationTile extends StatelessWidget {
           children: [
             Expanded(child: Text(conversation.name, style: const TextStyle(fontWeight: FontWeight.w800))),
             if (conversation.time.isNotEmpty)
-              Text(conversation.time, style: const TextStyle(color: AppColors.muted, fontSize: 12)),
+              Text(conversation.time, style: TextStyle(color: AppInk.subtle, fontSize: 12)),
           ],
         ),
         subtitle: Row(
@@ -390,7 +390,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  Expanded(child: Text(_error!, style: const TextStyle(color: AppColors.muted))),
+                  Expanded(child: Text(_error!, style: TextStyle(color: AppInk.subtle))),
                   TextButton(onPressed: _load, child: const Text('Tekrar dene')),
                 ],
               ),
@@ -412,7 +412,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                             ? message.senderId == Session.currentUserId
                             : index.isEven;
                         final mineColor = mine ? AppColors.burgundy : Colors.white;
-                        final textColor = mine ? Colors.white : AppColors.charcoal;
+                        final textColor = mine ? Colors.white : AppInk.text;
                         return Align(
                           alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
                           child: Container(
