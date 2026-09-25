@@ -22,10 +22,47 @@ async function requireMember(prisma: PrismaClient, conversationId: string, curre
   return member;
 }
 
+// Birebir kutularda teklik: ayni ikilinin fazlalari en eskiye birlesir.
+// Liste her acildiginda calisir, eski kopyalar kendiliginden temizlenir.
+async function dedupeDirectConversations(prisma: PrismaClient, userId: string): Promise<void> {
+  const mine = await prisma.conversation.findMany({
+    where: { members: { some: { userId } }, title: null },
+    include: { members: { select: { userId: true } } },
+    orderBy: { createdAt: 'asc' }
+  });
+  const seen = new Map<string, string>();
+  const extras = new Map<string, string[]>();
+  for (const conversation of mine) {
+    if (conversation.members.length !== 2) continue;
+    const key = conversation.members.map((member) => member.userId).sort().join('|');
+    const primaryId = seen.get(key);
+    if (!primaryId) {
+      seen.set(key, conversation.id);
+      continue;
+    }
+    const list = extras.get(primaryId) ?? [];
+    list.push(conversation.id);
+    extras.set(primaryId, list);
+  }
+  if (extras.size === 0) return;
+  await prisma.$transaction(async (tx) => {
+    for (const [primaryId, extraIds] of extras) {
+      for (const extraId of extraIds) {
+        await tx.message.updateMany({ where: { conversationId: extraId }, data: { conversationId: primaryId } });
+        await tx.conversationMember.deleteMany({ where: { conversationId: extraId } });
+        await tx.conversation.delete({ where: { id: extraId } });
+      }
+      const newest = await tx.message.findFirst({ where: { conversationId: primaryId }, orderBy: { createdAt: 'desc' }, select: { createdAt: true } });
+      if (newest) await tx.conversation.update({ where: { id: primaryId }, data: { updatedAt: newest.createdAt } });
+    }
+  });
+}
+
 export function messageRoutes(prisma: PrismaClient): Router {
   const router = Router();
   router.get('/conversations', validate(conversationListQuerySchema, 'query'), asyncHandler(async (req, res) => {
     const query = req.query as unknown as { limit: number };
+    await dedupeDirectConversations(prisma, userId(req));
     const conversations = await prisma.conversation.findMany({ where: { members: { some: { userId: userId(req) } } }, include: { members: { include: { user: { select: { id: true, displayName: true, avatarUrl: true } } } }, messages: { orderBy: { createdAt: 'desc' }, take: 1, select: { id: true, body: true, senderId: true, createdAt: true } } }, orderBy: { updatedAt: 'desc' }, take: query.limit });
     res.json({ data: conversations.map((conversation) => ({ id: conversation.id, title: conversation.title, members: conversation.members.map((member) => member.user), lastMessage: conversation.messages[0] ? { ...conversation.messages[0], body: decryptText(conversation.messages[0].body) } : null, updatedAt: conversation.updatedAt.toISOString() })) });
   }));
@@ -47,31 +84,18 @@ export function messageRoutes(prisma: PrismaClient): Router {
     });
     if (blocked) throw new ApiError(403, 'BLOCKED', 'This conversation is not available');
     // Birebir sohbette teklik: ayni ikili arasinda zaten kutu varsa yeniden
-    // acma, en eskiye don (fazlalari mesajlariyla birlestir).
+    // acma, en eskiye don.
     if (participantIds.length === 2 && !input.title) {
-      const mine = await prisma.conversation.findMany({
-        where: { members: { some: { userId: currentUserId } }, title: null },
-        include: { members: { select: { userId: true } } },
-        orderBy: { createdAt: 'asc' }
+      await dedupeDirectConversations(prisma, currentUserId);
+      const existing = await prisma.conversation.findFirst({
+        where: {
+          title: null,
+          members: { every: { userId: { in: participantIds } } }
+        },
+        include: { members: { select: { userId: true } } }
       });
-      const exact = mine.filter((conversation) =>
-        conversation.members.length === 2 &&
-        conversation.members.every((member) => participantIds.includes(member.userId)));
-      if (exact.length > 0) {
-        const primary = exact[0];
-        const extras = exact.slice(1);
-        if (extras.length > 0) {
-          await prisma.$transaction(async (tx) => {
-            for (const extra of extras) {
-              await tx.message.updateMany({ where: { conversationId: extra.id }, data: { conversationId: primary.id } });
-              await tx.conversationMember.deleteMany({ where: { conversationId: extra.id } });
-              await tx.conversation.delete({ where: { id: extra.id } });
-            }
-            const newest = await tx.message.findFirst({ where: { conversationId: primary.id }, orderBy: { createdAt: 'desc' }, select: { createdAt: true } });
-            if (newest) await tx.conversation.update({ where: { id: primary.id }, data: { updatedAt: newest.createdAt } });
-          });
-        }
-        const full = await prisma.conversation.findUnique({ where: { id: primary.id } });
+      if (existing && existing.members.length === 2) {
+        const full = await prisma.conversation.findUnique({ where: { id: existing.id } });
         return res.status(200).json({ data: full });
       }
     }
