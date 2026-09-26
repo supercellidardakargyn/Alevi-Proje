@@ -6,6 +6,6 @@ abstract final class AppStrings {
   static const guestUser = 'Misafir Kullanıcı';
   static const mockUser = 'Mock Kullanıcı';
   static const noMessagesYet = 'Henüz mesaj yok';
-  static const supportMail = 'destek@sonalis.com.tr';
+  static const supportMail = 'destek@canmeydani.com.tr';
   static const appVersion = 'Can Meydanı · v0.6.0';
 }

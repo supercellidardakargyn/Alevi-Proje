@@ -57,7 +57,7 @@ admobAppId=ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY
 ## 2. AdSense (site)
 
 ### 2.1 Hesap
-1. https://www.google.com/adsense → site ekle: `sonalis.com.tr`.
+1. https://www.google.com/adsense → site ekle: `canmeydani.com.tr`.
 2. Panel **Ödeme** bölümünden yayıncı ID'ni al: `pub-XXXXXXXXXXXXXXXX`.
 3. Panel **ads.txt** satırını kopyala.
 

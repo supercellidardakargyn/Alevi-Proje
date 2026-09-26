@@ -16,8 +16,8 @@ Sonraki yöneticiler panelden değil, aynı SQL ile atanır.
 
 Ana sunucu paketinin içindedir, ek kurulum yok:
 
-- Adres: `https://yonetim.sonalis.com.tr`
-- API: `https://api.sonalis.com.tr` (aynı `.env`, ek ayar gerekmez)
+- Adres: `https://yonetim.canmeydani.com.tr`
+- API: `https://api.canmeydani.com.tr` (aynı `.env`, ek ayar gerekmez)
 - Giriş: ADMIN e-posta + şifre (Destek talepleri, Bildirimler, Kullanıcılar, metrikler)
 
 ## Yönetim mobil uygulaması
@@ -30,5 +30,5 @@ Ana sunucu paketinin içindedir, ek kurulum yok:
 - Dağıtım: herkese açık sitede YAYINLANMAZ, yöneticilere elden verilir:
   `can-meydani-yonetim.apk` (Android), `can-meydani-yonetim-windows-x64.zip`
 - Derleme (ana istemciyle aynı tanımlar):
-  `flutter build apk --release --dart-define=API_BASE_URL=https://api.sonalis.com.tr`
-  `flutter build windows --release --dart-define=API_BASE_URL=https://api.sonalis.com.tr`
+  `flutter build apk --release --dart-define=API_BASE_URL=https://api.canmeydani.com.tr`
+  `flutter build windows --release --dart-define=API_BASE_URL=https://api.canmeydani.com.tr`

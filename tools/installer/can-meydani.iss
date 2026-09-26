@@ -7,9 +7,9 @@
 AppId={{49F75D9E-B19B-4FEB-871D-58BD5B052D81}
 AppName=Can Meydanı
 AppVersion={#AppVersion}
-AppPublisher=sonalis.com.tr
-AppPublisherURL=https://sonalis.com.tr/
-AppSupportURL=https://sonalis.com.tr/
+AppPublisher=canmeydani.com.tr
+AppPublisherURL=https://canmeydani.com.tr/
+AppSupportURL=https://canmeydani.com.tr/
 DefaultDirName={autopf}\Can Meydani
 DefaultGroupName=Can Meydanı
 OutputDir=..\..\dist

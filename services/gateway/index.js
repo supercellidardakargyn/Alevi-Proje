@@ -1,8 +1,8 @@
 // Alevi tek-port gateway (saf Node.js + express).
 // Disaridan acik tek port: GATEWAY_PORT (varsayilan 25577). Host adina gore dagitir:
-//   sonalis.com.tr (+www)      -> /srv/site statik dosya (+ /indir/*.apk)
-//   api.sonalis.com.tr         -> api:3000
-//   yonetim.sonalis.com.tr     -> admin:3000
+//   canmeydani.com.tr (+www)      -> /srv/site statik dosya (+ /indir/*.apk)
+//   api.canmeydani.com.tr         -> api:3000
+//   yonetim.canmeydani.com.tr     -> admin:3000
 // TLS, onundeki Cloudflare proxy'den gelir; burada duz HTTP konusulur.
 // Cloudflare panelinde Always Use HTTPS + HSTS acik olmalidir.
 const express = require('express');
@@ -79,8 +79,8 @@ async function proxy(req, res, upstream) {
 // Dogrudan IP ile gelene de site gosterilir (host eslesmezse asagiya duser).
 app.use((req, res, next) => {
   const host = (req.hostname || '').toLowerCase();
-  if (host === 'api.sonalis.com.tr') return proxy(req, res, API_UPSTREAM);
-  if (host === 'yonetim.sonalis.com.tr') return proxy(req, res, ADMIN_UPSTREAM);
+  if (host === 'api.canmeydani.com.tr') return proxy(req, res, API_UPSTREAM);
+  if (host === 'yonetim.canmeydani.com.tr') return proxy(req, res, ADMIN_UPSTREAM);
   next();
 });
 

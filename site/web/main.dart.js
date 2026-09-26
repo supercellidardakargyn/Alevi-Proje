@@ -32449,9 +32449,9 @@ aWn(){var s=0,r=A.r(t.H),q,p,o,n,m,l,k,j,i
 var $async$aWn=A.n(function(a,b){if(a===1)return A.o(b,r)
 for(;;)switch(s){case 0:if($.a9==null)A.aVa()
 $.a9.toString
-$.b0e="https://api.sonalis.com.tr"
+$.b0e="https://api.canmeydani.com.tr"
 q=new A.arE(B.G3)
-p=B.c.kx("https://api.sonalis.com.tr",A.cg("/$",!0,!1),"")
+p=B.c.kx("https://api.canmeydani.com.tr",A.cg("/$",!0,!1),"")
 A.aSD()
 o=new A.oA(A.b([],t.O))
 n=new A.a9o(p,o,q)
@@ -51372,7 +51372,7 @@ return A.q($async$qo,r)},
 CA(a){var s,r,q=J.a6(a)
 if(a instanceof A.cc){s=a.b
 return s==null?"Giri\u015f ba\u015far\u0131s\u0131z ("+a.a+").":s}this.a.toString
-s=A.aw0("https://api.sonalis.com.tr")
+s=A.aw0("https://api.canmeydani.com.tr")
 r=s==null?null:s.gnk(s)
 if(r==null)r="sunucu"
 if(B.c.m(q,"SocketException")||B.c.m(q,"Failed host lookup")||B.c.m(q,"Connection refused")||B.c.m(q,"timed out"))return"Sunucuya ula\u015f\u0131lamad\u0131 ("+r+"). \u0130nterneti kontrol edip tekrar dene."
@@ -51537,7 +51537,7 @@ $1(a){return A.aYN(new A.aGc(),!1,0.7,0.9,0.4)},
 $S:321}
 A.aGc.prototype={
 $2(a,b){var s=null
-return A.nE(A.bj(A.b([B.a4v,B.b7,A.a2("Veri sorumlusu: sonalis.com.tr. E-posta, g\xf6r\xfcnen ad, profil bilgileri ve kullan\u0131m verilerin; hesap i\u015fletimi, g\xfcvenlik ve moderasyon amac\u0131yla i\u015flenir. Dini/k\xfclt\xfcrel alanlar iste\u011fe ba\u011fl\u0131d\u0131r, \u015fifreli saklan\u0131r ve ke\u015ffette kullan\u0131lmaz. Verilerin sat\u0131lmaz, reklamc\u0131larla payla\u015f\u0131lmaz. Eri\u015fim, d\xfczeltme ve silme i\xe7in kvkk@sonalis.com.tr adresine yazabilir, hesab\u0131n\u0131 uygulamadan silebilirsin. Tam metin: sonalis.com.tr/gizlilik.html",s,s,s,A.bh(s,s,$.bE,s,s,s,s,s,s,s,s,s,s,s,s,s,1.5,!0,s,s,s,s,s,s,s,s),s,s,s)],t.p),B.Z,s,B.m,B.n),b,B.d7)},
+return A.nE(A.bj(A.b([B.a4v,B.b7,A.a2("Veri sorumlusu: canmeydani.com.tr. E-posta, g\xf6r\xfcnen ad, profil bilgileri ve kullan\u0131m verilerin; hesap i\u015fletimi, g\xfcvenlik ve moderasyon amac\u0131yla i\u015flenir. Dini/k\xfclt\xfcrel alanlar iste\u011fe ba\u011fl\u0131d\u0131r, \u015fifreli saklan\u0131r ve ke\u015ffette kullan\u0131lmaz. Verilerin sat\u0131lmaz, reklamc\u0131larla payla\u015f\u0131lmaz. Eri\u015fim, d\xfczeltme ve silme i\xe7in kvkk@canmeydani.com.tr adresine yazabilir, hesab\u0131n\u0131 uygulamadan silebilirsin. Tam metin: canmeydani.com.tr/gizlilik.html",s,s,s,A.bh(s,s,$.bE,s,s,s,s,s,s,s,s,s,s,s,s,s,1.5,!0,s,s,s,s,s,s,s,s),s,s,s)],t.p),B.Z,s,B.m,B.n),b,B.d7)},
 $S:322}
 A.aGe.prototype={
 $1(a){var s=null
@@ -55471,7 +55471,7 @@ n=k.y
 m=n?"Denetleniyor\u2026":"G\xfcncellemeleri denetle"
 l=k.x
 l=l.length===0?"Y\xfckl\xfc s\xfcr\xfcm bilgisi al\u0131n\u0131yor":"Y\xfckl\xfc: "+l
-return A.i9(i,j,A.pk(A.b([B.WW,B.bQ,h,B.cd,B.WU,B.bQ,p,B.cd,B.CC,B.bQ,q,B.cd,B.X_,B.bQ,r,B.cd,B.WX,B.bQ,s,B.cd,B.WY,B.bQ,A.eY(A.bj(A.b([new A.hv(B.LG,m,l,n?new A.aNJ():k.gavQ(),j),new A.hv(B.LD,"Gizlilik Politikas\u0131","sonalis.com.tr/gizlilik.html",new A.aNK(k),j),new A.hv(B.Lw,"KVKK ba\u015fvurusu","sonalis.com.tr/kvkk.html",new A.aNC(k),j)],o),B.p,j,B.m,B.n),j,j)],o),B.qx,B.X),j,j)}}
+return A.i9(i,j,A.pk(A.b([B.WW,B.bQ,h,B.cd,B.WU,B.bQ,p,B.cd,B.CC,B.bQ,q,B.cd,B.X_,B.bQ,r,B.cd,B.WX,B.bQ,s,B.cd,B.WY,B.bQ,A.eY(A.bj(A.b([new A.hv(B.LG,m,l,n?new A.aNJ():k.gavQ(),j),new A.hv(B.LD,"Gizlilik Politikas\u0131","canmeydani.com.tr/gizlilik.html",new A.aNK(k),j),new A.hv(B.Lw,"KVKK ba\u015fvurusu","canmeydani.com.tr/kvkk.html",new A.aNC(k),j)],o),B.p,j,B.m,B.n),j,j)],o),B.qx,B.X),j,j)}}
 A.aNn.prototype={
 $0(){var s,r,q=this,p=q.b
 p.d=q.c!=="false"
@@ -55572,10 +55572,10 @@ A.aNJ.prototype={
 $0(){},
 $S:0}
 A.aNK.prototype={
-$0(){return this.a.xY("https://sonalis.com.tr/gizlilik.html")},
+$0(){return this.a.xY("https://canmeydani.com.tr/gizlilik.html")},
 $S:0}
 A.aNC.prototype={
-$0(){return this.a.xY("https://sonalis.com.tr/kvkk.html")},
+$0(){return this.a.xY("https://canmeydani.com.tr/kvkk.html")},
 $S:0}
 A.pv.prototype={
 X(){return new A.KQ()}}
@@ -56677,7 +56677,7 @@ case 11:k=a7
 a0=A.kF(k.d,null)
 j=a0==null?0:a0
 s=12
-return A.j(n.a.Ba("https://sonalis.com.tr/version.json"),$async$lG)
+return A.j(n.a.Ba("https://canmeydani.com.tr/version.json"),$async$lG)
 case 12:i=a7
 h=n.atF()
 if(h==null){s=1
@@ -56700,7 +56700,7 @@ return A.j(A.vV(null,null,!0,null,new A.avX(d),a4,null,!0,t.y),$async$lG)
 case 13:c=a7
 s=J.c(c,!0)?14:15
 break
-case 14:b=A.aw0(J.b7E(e,"http")?e:"https://sonalis.com.tr"+A.l(e))
+case 14:b=A.aw0(J.b7E(e,"http")?e:"https://canmeydani.com.tr"+A.l(e))
 s=b!=null?16:17
 break
 case 16:s=18

@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://sonalis.com.tr/sitemap.xml
+Sitemap: https://canmeydani.com.tr/sitemap.xml

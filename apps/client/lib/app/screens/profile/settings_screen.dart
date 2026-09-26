@@ -310,14 +310,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 SettingsTile(
                   icon: Icons.privacy_tip_outlined,
                   title: 'Gizlilik Politikası',
-                  subtitle: 'sonalis.com.tr/gizlilik.html',
-                  onTap: () => _openLink('https://sonalis.com.tr/gizlilik.html'),
+                  subtitle: 'canmeydani.com.tr/gizlilik.html',
+                  onTap: () => _openLink('https://canmeydani.com.tr/gizlilik.html'),
                 ),
                 SettingsTile(
                   icon: Icons.gavel_outlined,
                   title: 'KVKK başvurusu',
-                  subtitle: 'sonalis.com.tr/kvkk.html',
-                  onTap: () => _openLink('https://sonalis.com.tr/kvkk.html'),
+                  subtitle: 'canmeydani.com.tr/kvkk.html',
+                  onTap: () => _openLink('https://canmeydani.com.tr/kvkk.html'),
                 ),
               ],
             ),

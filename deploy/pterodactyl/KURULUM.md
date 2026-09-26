@@ -1,4 +1,4 @@
-# Alevi Connect API — Pterodactyl + sonalis.com.tr kurulumu
+# Alevi Connect API — Pterodactyl + canmeydani.com.tr kurulumu
 
 ## 1. Gerekenler (panelde yoksa önce bunları hazırla)
 
@@ -19,7 +19,7 @@
    512 MB RAM / 1 CPU / 1 GB disk yeterli (başlangıç).
 4. Server **Startup / Variables** sekmesinde doldur:
    DATABASE_URL, REDIS_URL (boş bırakılabilir anlayışıyla default kalabilir),
-   CORS_ORIGINS=`https://sonalis.com.tr`, 3 secret, issuer/audience default.
+   CORS_ORIGINS=`https://canmeydani.com.tr`, 3 secret, issuer/audience default.
 
 ## 3. Dosyaları yükle
 
@@ -34,16 +34,16 @@ klasörleri container kökünde olacak şekilde (zip yükleyip Unarchive en kola
 2. **Console** → `API listening on 0.0.0.0:<port>` görülmeli.
 3. Test: `http://NODE_IP:ALLOCATION_PORT/health/live` → `{"status":"ok"}`.
 
-## 5. Domain bağlama (sonalis.com.tr)
+## 5. Domain bağlama (canmeydani.com.tr)
 
 Pterodactyl portu doğrudan 443/SSL vermez. İki yol:
 
-**A — Basit (önerilen):** Cloudflare'de `api.sonalis.com.tr` → A kaydı → node IP
-(DNS only, proxy kapalı). Uygulama `http://api.sonalis.com.tr:PORT` ile çalışır.
+**A — Basit (önerilen):** Cloudflare'de `api.canmeydani.com.tr` → A kaydı → node IP
+(DNS only, proxy kapalı). Uygulama `http://api.canmeydani.com.tr:PORT` ile çalışır.
 Flutter'da `API_BASE_URL` bunu gösterir.
 
 **B — 443/SSL:** Node önüne nginx reverse proxy
-(`api.sonalis.com.tr` → `127.0.0.1:ALLOCATION_PORT`, certbot ile SSL).
+(`api.canmeydani.com.tr` → `127.0.0.1:ALLOCATION_PORT`, certbot ile SSL).
 Gerektiğinde `deploy/` altına nginx örneği eklenir.
 
 Not: Admin paneli (Next) bu egg'e dahil değil; API canlıya geçince

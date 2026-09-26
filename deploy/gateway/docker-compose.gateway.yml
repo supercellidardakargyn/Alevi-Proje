@@ -59,7 +59,7 @@ services:
       REDIS_REQUIRED: "true"
       MESH_ENABLED: ${MESH_ENABLED:-false}
       MESH_NODE_ID: ${MESH_NODE_ID:-gateway-1}
-      CORS_ORIGINS: ${CORS_ORIGINS:-https://sonalis.com.tr,https://www.sonalis.com.tr,https://api.sonalis.com.tr,https://yonetim.sonalis.com.tr}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://canmeydani.com.tr,https://www.canmeydani.com.tr,https://api.canmeydani.com.tr,https://yonetim.canmeydani.com.tr}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET}
       JWT_ISSUER: ${JWT_ISSUER:-alevi-connect}
@@ -78,7 +78,7 @@ services:
       context: ../..
       dockerfile: apps/admin/Dockerfile
       args:
-        NEXT_PUBLIC_ADMIN_API_URL: ${NEXT_PUBLIC_ADMIN_API_URL:-https://api.sonalis.com.tr}
+        NEXT_PUBLIC_ADMIN_API_URL: ${NEXT_PUBLIC_ADMIN_API_URL:-https://api.canmeydani.com.tr}
     environment:
       NODE_ENV: production
     restart: unless-stopped

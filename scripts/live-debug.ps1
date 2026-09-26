@@ -1,4 +1,4 @@
-$base = 'https://api.sonalis.com.tr'
+$base = 'https://api.canmeydani.com.tr'
 try {
   $r = Invoke-WebRequest -UseBasicParsing "$base/v1/auth/login" -Method Post -ContentType 'application/json' -Body '{"email":"yok@ornek.com","password":"yanlis-sifre-1234"}' -TimeoutSec 40
   Write-Output "status: $([int]$r.StatusCode)"

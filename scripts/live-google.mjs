@@ -1,5 +1,5 @@
 async function main() {
-  const res = await fetch('https://api.sonalis.com.tr/v1/auth/google', {
+  const res = await fetch('https://api.canmeydani.com.tr/v1/auth/google', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ idToken: 'x'.repeat(64), consentVersion: 'kvkk-v1', ageConfirmed: true }),

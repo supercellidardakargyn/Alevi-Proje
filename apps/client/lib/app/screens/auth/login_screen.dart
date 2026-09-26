@@ -353,7 +353,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const Text('KVKK Aydınlatma Metni (özet)', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
               const SizedBox(height: 12),
               Text(
-                'Veri sorumlusu: sonalis.com.tr. E-posta, görünen ad, profil bilgileri ve kullanım verilerin; hesap işletimi, güvenlik ve moderasyon amacıyla işlenir. Dini/kültürel alanlar isteğe bağlıdır, şifreli saklanır ve keşfette kullanılmaz. Verilerin satılmaz, reklamcılarla paylaşılmaz. Erişim, düzeltme ve silme için kvkk@sonalis.com.tr adresine yazabilir, hesabını uygulamadan silebilirsin. Tam metin: sonalis.com.tr/gizlilik.html',
+                'Veri sorumlusu: canmeydani.com.tr. E-posta, görünen ad, profil bilgileri ve kullanım verilerin; hesap işletimi, güvenlik ve moderasyon amacıyla işlenir. Dini/kültürel alanlar isteğe bağlıdır, şifreli saklanır ve keşfette kullanılmaz. Verilerin satılmaz, reklamcılarla paylaşılmaz. Erişim, düzeltme ve silme için kvkk@canmeydani.com.tr adresine yazabilir, hesabını uygulamadan silebilirsin. Tam metin: canmeydani.com.tr/gizlilik.html',
                 style: TextStyle(color: AppInk.subtle, height: 1.5),
               ),
             ],

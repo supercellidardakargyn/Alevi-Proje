@@ -1,4 +1,4 @@
-# Alevi + sonalis.com.tr — Ana/Yan sunucu kurulumu (tar.gz, ugrasmadan)
+# Alevi + canmeydani.com.tr — Ana/Yan sunucu kurulumu (tar.gz, ugrasmadan)
 
 > Kanonik kurulum: **KURULUM-NODE.md** (`node index.js`, docker yok).
 > Bu dosya mimari + DNS + panel referansidir; komutlar icin oraya bak.
@@ -10,9 +10,9 @@ internet (Cloudflare proxy onerilir)
    │  sadece 25577 (ana) / 25763 (yan mesh)
    ▼
 ANA SUNUCU :25577 (Node.js gateway dagitir: services/gateway/index.js)
- ├── sonalis.com.tr            → tanıtım sitesi + APK (/indir/can-meydani.apk)
- ├── api.sonalis.com.tr        → api:3000 (iç ağ, portsuz)
- ├── yonetim.sonalis.com.tr    → admin:3001 (iç ağ, portsuz)
+ ├── canmeydani.com.tr            → tanıtım sitesi + APK (/indir/can-meydani.apk)
+ ├── api.canmeydani.com.tr        → api:3000 (iç ağ, portsuz)
+ ├── yonetim.canmeydani.com.tr    → admin:3001 (iç ağ, portsuz)
  ├── postgres                  (dis: Supabase/Neon; redis kapali)
    │  ana → yan: mesh mTLS aramasi (outbound, serbest)
    │  yan → ana: nabiz HTTPS (outbound, serbest)
@@ -26,10 +26,10 @@ Alt sunuculara internetten erisim YOK. Guvenlik duvarinda baska port acma.
 
 | Host                   | Tür |
 |------------------------|-----|
-| sonalis.com.tr         | A   |
-| www.sonalis.com.tr     | A   |
-| api.sonalis.com.tr     | A   |
-| yonetim.sonalis.com.tr | A   |
+| canmeydani.com.tr         | A   |
+| www.canmeydani.com.tr     | A   |
+| api.canmeydani.com.tr     | A   |
+| yonetim.canmeydani.com.tr | A   |
 
 Yan sunucuya DNS kaydi GEREKMEZ. Turuncu bulut kapaliysa site duz HTTP
 acilir; API yine calisir (uygulama baglanir, tarayici uyarir).
@@ -44,11 +44,11 @@ acilir; API yine calisir (uygulama baglanir, tarayici uyarir).
      Normal Gmail şifren OLMAZ, uygulama şifresi şart.
    - `GOOGLE_CLIENT_ID`: Google Cloud → APIs & Services → Credentials →
      "OAuth client ID" (Web application) → istemci kimliği. JavaScript origins:
-     `https://sonalis.com.tr`, Authorized redirect: gerekmez (mobil ID token kullanır).
+     `https://canmeydani.com.tr`, Authorized redirect: gerekmez (mobil ID token kullanır).
 3. Baslat: `node index.js` (bagimlilik + migration otomatik)
 4. Kontrol: `http://ANA_IP:25577/health/live` → ok (ana API direk porttan da cevap verir;
-   dis dunya Cloudflare uzerinden `https://api.sonalis.com.tr/health/live` kullanir).
-5. Site: `https://sonalis.com.tr` → APK indir butonu calisir.
+   dis dunya Cloudflare uzerinden `https://api.canmeydani.com.tr/health/live` kullanir).
+5. Site: `https://canmeydani.com.tr` → APK indir butonu calisir.
    (Gateway dahil her sey Node.js: `services/gateway/index.js`. Harici
    reverse proxy (Caddy/nginx) yok.)
 
@@ -66,7 +66,7 @@ acilir; API yine calisir (uygulama baglanir, tarayici uyarir).
 
 ## Yeni sunucu ekleme (admin panelinden, onerilen)
 
-1. `https://yonetim.sonalis.com.tr` → **Sunucular** bölümü.
+1. `https://yonetim.canmeydani.com.tr` → **Sunucular** bölümü.
 2. Form: ad (`yan-2`), mesh adresi (yan sunucu IP), port (`25763`) → **Sunucu ekle**.
 3. Ekrana TEK SEFERLIK **katılım anahtarı** cikar. Bunu yan sunucunun
    `.env` dosyasindaki `EDGE_JOIN_TOKEN` ve `EDGE_UPLINK_URL` degerlerine

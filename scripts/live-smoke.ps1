@@ -1,4 +1,4 @@
-$base = 'https://api.sonalis.com.tr'
+$base = 'https://api.canmeydani.com.tr'
 function Check($label, [scriptblock]$fn, $expect) {
   try {
     $r = & $fn

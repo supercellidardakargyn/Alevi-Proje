@@ -5,7 +5,7 @@
 - Sunucuda **Node.js 20+** kurulu olsun: `node --version`
 - Dis Postgres (Supabase/Neon ucretsiz): connection string alin
 - 4 DNS A kaydi ana sunucu IP'sine (Cloudflare turuncu bulut acik):
-  `sonalis.com.tr`, `www`, `api`, `yonetim`
+  `canmeydani.com.tr`, `www`, `api`, `yonetim`
 
 ## Ana sunucu
 
@@ -21,8 +21,8 @@
    Ekranda sirasiyla su satirlar gorulur:
    `[kurulum] veritabani migration calistiriliyor...`
    `[ok] api=:3000 admin=:3001 gateway=:25577`
-4. Kontrol: `https://api.sonalis.com.tr/health/live` → `{"status":"ok"}`
-   Site: `https://sonalis.com.tr` (APK indirme calisir).
+4. Kontrol: `https://api.canmeydani.com.tr/health/live` → `{"status":"ok"}`
+   Site: `https://canmeydani.com.tr` (APK indirme calisir).
    Kapatmak icin: `Ctrl+C`.
 
 Arka planda calistirmak icin: `nohup node index.js > alevi.log 2>&1 &`

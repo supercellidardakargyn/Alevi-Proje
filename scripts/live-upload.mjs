@@ -3,7 +3,7 @@ async function main() {
   const form = new FormData();
   form.append('avatar', new Blob([bytes], { type: 'image/png' }), 'test.png');
   const started = Date.now();
-  const res = await fetch('https://api.sonalis.com.tr/v1/profile/avatar', { method: 'POST', body: form, signal: AbortSignal.timeout(30000) });
+  const res = await fetch('https://api.canmeydani.com.tr/v1/profile/avatar', { method: 'POST', body: form, signal: AbortSignal.timeout(30000) });
   console.log('status:', res.status, 'sure:', ((Date.now() - started) / 1000).toFixed(1) + 's');
   console.log((await res.text()).slice(0, 300));
 }

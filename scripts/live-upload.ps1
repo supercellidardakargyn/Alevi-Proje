@@ -1,4 +1,4 @@
-$base = 'https://api.sonalis.com.tr'
+$base = 'https://api.canmeydani.com.tr'
 $tmp = [System.IO.Path]::GetTempFileName() + '.png'
 [System.IO.File]::WriteAllBytes($tmp, [byte[]]@(137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82))
 try {

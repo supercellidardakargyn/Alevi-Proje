@@ -3,7 +3,7 @@ WORKDIR /app
 COPY apps/admin/package.json apps/admin/package-lock.json ./
 RUN npm ci
 COPY apps/admin ./
-ARG NEXT_PUBLIC_ADMIN_API_URL=https://api.sonalis.com.tr
+ARG NEXT_PUBLIC_ADMIN_API_URL=https://api.canmeydani.com.tr
 ENV NEXT_PUBLIC_ADMIN_API_URL=$NEXT_PUBLIC_ADMIN_API_URL
 RUN npm run build
 

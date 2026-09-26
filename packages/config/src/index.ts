@@ -22,7 +22,7 @@ const envSchema = z.object({
   SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
   SMTP_USER: z.string().default(''),
   SMTP_PASS: z.string().default(''),
-  SMTP_FROM: z.string().default('Can Meydanı <noreply@sonalis.com.tr>'),
+  SMTP_FROM: z.string().default('Can Meydanı <noreply@canmeydani.com.tr>'),
   AI_ENABLED: z.string().default('false'),
   AI_API_URL: z.string().default('https://ai-gateway.vercel.sh/v1'),
   AI_API_KEY: z.string().default(''),

@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 env:
-  API_URL: https://api.sonalis.com.tr
+  API_URL: https://api.canmeydani.com.tr
   APP_NAME_DEFINE: Can Meydanı
   GOOGLE_WEB_CLIENT: 1070934024659-clseqcimci54ubir7e317ralrdo1ja9q.apps.googleusercontent.com
 

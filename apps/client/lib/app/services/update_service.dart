@@ -35,7 +35,7 @@ class UpdateService {
       }
       final info = await PackageInfo.fromPlatform();
       final current = int.tryParse(info.buildNumber) ?? 0;
-      final result = await apiClient.getAbsolute('https://sonalis.com.tr/version.json');
+      final result = await apiClient.getAbsolute('https://canmeydani.com.tr/version.json');
       final platform = _platformKey();
       if (platform == null) return;
       final entry = result[platform];
@@ -70,7 +70,7 @@ class UpdateService {
         ),
       );
       if (go == true) {
-        final uri = Uri.tryParse(url.startsWith('http') ? url : 'https://sonalis.com.tr$url');
+        final uri = Uri.tryParse(url.startsWith('http') ? url : 'https://canmeydani.com.tr$url');
         if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
     } catch (_) {
@@ -94,7 +94,7 @@ class UpdateService {
       SnackBar(content: Text('v$version indiriliyor, arka planda kurulacak…'), duration: const Duration(seconds: 4)),
     );
     try {
-      final uri = Uri.tryParse(url.startsWith('http') ? url : 'https://sonalis.com.tr$url');
+      final uri = Uri.tryParse(url.startsWith('http') ? url : 'https://canmeydani.com.tr$url');
       if (uri == null) return;
       final response = await http.get(uri).timeout(const Duration(minutes: 5));
       if (response.statusCode != 200 || response.bodyBytes.isEmpty) return;

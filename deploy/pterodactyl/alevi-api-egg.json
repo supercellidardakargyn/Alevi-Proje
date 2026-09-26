@@ -6,7 +6,7 @@
   },
   "exported_at": "2026-09-22T00:00:00+03:00",
   "name": "Alevi Connect API",
-  "author": "hi@sonalis.com.tr",
+  "author": "hi@canmeydani.com.tr",
   "description": "Alevi Connect Node.js API (Express + Prisma + PostgreSQL + Redis opsiyonel). DATABASE_URL dis Postgres ister; Pterodactyl MySQL ile calismaz.",
   "features": null,
   "docker_images": {
@@ -50,9 +50,9 @@
     },
     {
       "name": "CORS Origins",
-      "description": "Virgulle ayrilmis izinli origin listesi. Ornek: https://sonalis.com.tr",
+      "description": "Virgulle ayrilmis izinli origin listesi. Ornek: https://canmeydani.com.tr",
       "env_variable": "CORS_ORIGINS",
-      "default_value": "https://sonalis.com.tr",
+      "default_value": "https://canmeydani.com.tr",
       "user_viewable": true,
       "user_editable": true,
       "rules": "required|string"

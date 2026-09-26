@@ -104,7 +104,7 @@ function readCookie(name: string): string | undefined {
 
 function getApiBaseUrl(): string {
   const configured = (process.env.NEXT_PUBLIC_ADMIN_API_URL?.trim() || "/v1/admin").replace(/\/$/, "");
-  // Ornekler: "/v1/admin" (ayni origin) veya "https://api.sonalis.com.tr" (mutlak kok).
+  // Ornekler: "/v1/admin" (ayni origin) veya "https://api.canmeydani.com.tr" (mutlak kok).
   const root = configured.endsWith("/v1/admin") ? configured : `${configured}/v1/admin`;
   return root;
 }

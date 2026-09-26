@@ -7,7 +7,7 @@ import 'app/theme/app_theme.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 
-const _apiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'https://api.sonalis.com.tr');
+const _apiBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'https://api.canmeydani.com.tr');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
