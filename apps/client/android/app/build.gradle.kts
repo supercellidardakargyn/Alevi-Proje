@@ -28,6 +28,10 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // AdMob uygulama kimligi: gradle.properties uzerinden verilir.
+        // Varsayilan deger Google'in resmi TEST kimligidir.
+        manifestPlaceholders["admobAppId"] = (project.findProperty("admobAppId") as String?)
+            ?: "ca-app-pub-3940256099942544~3347511713"
     }
 
     buildTypes {

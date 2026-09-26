@@ -181,6 +181,7 @@ class _AppEntryState extends State<AppEntry> {
       apiClient: widget.apiClient,
       storage: widget.storage,
       onLoggedOut: _logout,
+      config: widget.config,
     );
   }
 }

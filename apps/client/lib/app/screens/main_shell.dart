@@ -2,15 +2,19 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../config/app_config.dart';
+import '../services/ads_service.dart';
 import '../services/api_client.dart';
 import '../services/location_service.dart';
 import '../services/notifier.dart';
 import '../services/secure_storage.dart';
 import '../services/update_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/ad_banner.dart';
 import 'community/community_screen.dart';
 import 'call/call_screen.dart';
 import 'discover/discover_screen.dart';
+import 'map/map_screen.dart';
 import 'matches/matches_screen.dart';
 import 'messages/messages_screen.dart';
 import 'profile/profile_screen.dart';
@@ -21,30 +25,35 @@ class MainShell extends StatefulWidget {
     required this.apiClient,
     required this.storage,
     required this.onLoggedOut,
+    required this.config,
   });
 
   final ApiClientPort apiClient;
   final SecureStoragePort storage;
   final VoidCallback onLoggedOut;
+  final AppConfig config;
 
   @override
   State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   int _selectedIndex = 0;
   AppNotifier? _notifier;
   Timer? _callPoller;
   String? _activeCallId;
   String? _ringingCallId;
   late final List<Widget> _screens;
+  late final AdsService _ads;
 
   @override
   void initState() {
     super.initState();
+    _ads = AdsService(widget.config);
     _screens = [
       CommunityScreen(apiClient: widget.apiClient),
       DiscoverScreen(apiClient: widget.apiClient, storage: widget.storage),
+      MapScreen(apiClient: widget.apiClient),
       MatchesScreen(apiClient: widget.apiClient),
       MessagesScreen(apiClient: widget.apiClient),
       ProfileScreen(storage: widget.storage, apiClient: widget.apiClient, onLoggedOut: widget.onLoggedOut),
@@ -56,7 +65,7 @@ class _MainShellState extends State<MainShell> {
       apiClient: widget.apiClient,
       onMessageTap: (conversationId, name) {
         if (!mounted) return;
-        setState(() => _selectedIndex = 3);
+        setState(() => _selectedIndex = 4);
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ChatScreen(
@@ -73,13 +82,56 @@ class _MainShellState extends State<MainShell> {
     _heartbeat();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       UpdateService(apiClient: widget.apiClient, storage: widget.storage).checkDaily(context);
+      _maybePromptNotifications();
+      _ads.init();
     });
+    // Kullanici uygulamaya dondugunde ara sira tam ekran reklam gosterilir.
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  Future<void> _maybePromptNotifications() async {
+    final done = await widget.storage.read(key: 'notif_prompt_done');
+    if (done == 'true' || !mounted) return;
+    final open = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Bildirimleri aç'),
+        content: const Text('Yeni eşleşme ve mesajlardan anında haberin olsun. İstediğin zaman Ayarlar’dan kapatabilirsin.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Şimdi değil')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Aç')),
+        ],
+      ),
+    );
+    await widget.storage.write(key: 'notif_prompt_done', value: 'true');
+    if (!mounted) return;
+    if (open == true) {
+      final granted = await _notifier?.ensurePermission() ?? false;
+      AppNotifier.enabled = true;
+      await widget.storage.write(key: 'notifications_enabled', value: 'true');
+      if (!granted && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sistem izni verilmedi, bildirimler sessizde kalabilir.')),
+        );
+      }
+    } else {
+      AppNotifier.enabled = false;
+      await widget.storage.write(key: 'notifications_enabled', value: 'false');
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _ads.maybeShowInterstitial();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _callPoller?.cancel();
     _notifier?.stop();
+    _ads.dispose();
     super.dispose();
   }
 
@@ -178,6 +230,7 @@ class _MainShellState extends State<MainShell> {
     const destinations = [
       (icon: Icons.groups_outlined, active: Icons.groups, label: 'Topluluk'),
       (icon: Icons.explore_outlined, active: Icons.explore, label: 'Keşfet'),
+      (icon: Icons.map_outlined, active: Icons.map, label: 'Harita'),
       (
         icon: Icons.favorite_border,
         active: Icons.favorite,
@@ -222,7 +275,11 @@ class _MainShellState extends State<MainShell> {
     }
     return Scaffold(
       body: body,
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AdBanner(ads: _ads),
+          NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) =>
             setState(() => _selectedIndex = index),
@@ -236,6 +293,10 @@ class _MainShellState extends State<MainShell> {
               selectedIcon: Icon(Icons.explore),
               label: 'Keşfet',),
           NavigationDestination(
+              icon: Icon(Icons.map_outlined),
+              selectedIcon: Icon(Icons.map),
+              label: 'Harita',),
+          NavigationDestination(
               icon: Icon(Icons.favorite_border),
               selectedIcon: Icon(Icons.favorite),
               label: 'Eşleşmeler',),
@@ -247,6 +308,8 @@ class _MainShellState extends State<MainShell> {
               icon: Icon(Icons.person_outline),
               selectedIcon: Icon(Icons.person),
               label: 'Profil',),
+        ],
+          ),
         ],
       ),
     );

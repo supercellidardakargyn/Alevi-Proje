@@ -38,10 +38,10 @@ export function eventRoutes(prisma: PrismaClient): Router {
     });
   }));
   router.post('/', validate(createEventRequestSchema), asyncHandler(async (req, res) => {
-    const body = req.body as { title: string; description?: string; city?: string; startsAt: string };
+    const body = req.body as { title: string; description?: string; city?: string; latitude?: number; longitude?: number; startsAt: string };
     const event = await prisma.$transaction(async (tx) => {
       const created = await tx.event.create({
-        data: { creatorId: userId(req), title: body.title, description: body.description, city: body.city, startsAt: new Date(body.startsAt) }
+        data: { creatorId: userId(req), title: body.title, description: body.description, city: body.city, latitude: body.latitude, longitude: body.longitude, startsAt: new Date(body.startsAt) }
       });
       await tx.eventAttendee.create({ data: { eventId: created.id, userId: userId(req) } });
       return created;

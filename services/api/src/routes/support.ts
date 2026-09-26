@@ -12,6 +12,33 @@ const ticketListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20)
 });
 
+/**
+ * Destek otomasyonu: sikayet govdesinde tanik kaliptan aninda yanit yazar.
+ * Model gerekmez, kurallar kutuphanede durur; tutmazsa akis degismez.
+ */
+const AUTO_REPLIES: Array<{ match: (lower: string) => boolean; text: string }> = [
+  {
+    match: (body) => body.includes('şifre') || body.includes('sifre') || body.includes('parola'),
+    text: 'Şifrenizi giriş ekranındaki "Şifremi unuttum" bağlantısıyla sıfırlayabilirsiniz. E-postanıza 10 dakika geçerli 6 haneli kod gelir.'
+  },
+  {
+    match: (body) => body.includes('hesap') && (body.includes('sil') || body.includes('kapat') || body.includes('silme')),
+    text: 'Hesabınızı Profil > Hesabı sil bölümünden kapatabilirsiniz. Bu işlem geri alınamaz.'
+  },
+  {
+    match: (body) =>
+      body.includes('ücret') || body.includes('ucret') || body.includes('para') ||
+      body.includes('ödeme') || body.includes('odeme') || body.includes('fiyat'),
+    text: 'Can Meydanı şu an tamamen ücretsizdir, kart bilgileriniz istenmez.'
+  }
+];
+
+function autoReplyFor(body: string): string | null {
+  const lower = body.toLocaleLowerCase('tr');
+  const found = AUTO_REPLIES.find((rule) => rule.match(lower));
+  return found ? `[Otomatik yanıt] ${found.text}` : null;
+}
+
 function present(row: { id: string; subject: string; body: string; status: string; reply: string | null; aiDraft?: string | null; createdAt: Date; updatedAt: Date }) {
   return {
     id: row.id,
@@ -38,9 +65,19 @@ export function supportRoutes(prisma: PrismaClient): Router {
   }));
   router.post('/', validate(createTicketRequestSchema), asyncHandler(async (req, res) => {
     const body = req.body as { subject: string; body: string };
+    // Otomasyon: bilinen konulara aninda yanit, ticket'i cozulmus say.
+    const auto = autoReplyFor(`${body.subject} ${body.body}`);
     const ticket = await prisma.supportTicket.create({
       data: { userId: userId(req), subject: body.subject, body: encryptText(body.body) }
     });
+    if (auto) {
+      const answered = await prisma.supportTicket.update({
+        where: { id: ticket.id },
+        data: { reply: encryptText(auto), repliedAt: new Date(), status: 'ANSWERED' }
+      });
+      res.status(201).json({ data: present(answered) });
+      return;
+    }
     // Yapay zeka taslagi arka planda uretilir, yaniti geciktirmez.
     void draftSupportReply(body.subject, body.body)
       .then((draft) => {

@@ -21,6 +21,7 @@ build/
 *.tar.gz
 *.apk
 android/key.properties
+android/.kotlin/
 android/app/*.jks
 ios/Runner/*.mobileprovision
 coverage/

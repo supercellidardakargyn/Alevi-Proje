@@ -62,6 +62,16 @@ class AppNotifier {
     _webGranted = await requestWebNotificationPermission();
   }
 
+  /// Ilk acilis sorusundan cagrilir: izni ister, sonucu doner.
+  Future<bool> ensurePermission() async {
+    if (kIsWeb) {
+      await _requestWebPermission();
+      return _webGranted;
+    }
+    await _requestPermission();
+    return true;
+  }
+
   Future<void> _requestPermission() async {
     try {
       await _plugin

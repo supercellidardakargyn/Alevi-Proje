@@ -43,8 +43,10 @@ export const updateProfileRequestSchema = z.object({
   avatarUrl: z.string().url().max(2048).nullable().optional(),
   city: z.string().trim().max(120).nullable().optional(),
   district: z.string().trim().max(120).nullable().optional(),
+  country: z.string().trim().max(120).nullable().optional(),
   latitude: z.number().min(-90).max(90).nullable().optional(),
   longitude: z.number().min(-180).max(180).nullable().optional(),
+  showMapLocation: z.boolean().optional(),
   interests: z.array(z.string().trim().min(1).max(30)).max(10).optional(),
   photos: z.array(z.string().url().max(2048)).max(6).optional(),
   sensitivePayload: sensitivePayloadSchema.nullable().optional()
@@ -56,6 +58,7 @@ export const discoverQuerySchema = z.object({
   q: z.string().trim().max(80).optional(),
   city: z.string().trim().max(120).optional(),
   district: z.string().trim().max(120).optional(),
+  country: z.string().trim().max(120).optional(),
   latitude: z.coerce.number().min(-90).max(90).optional(),
   longitude: z.coerce.number().min(-180).max(180).optional(),
   maxDistanceKm: z.coerce.number().min(1).max(20000).optional()
@@ -164,6 +167,8 @@ export const createEventRequestSchema = z.object({
   title: z.string().trim().min(2).max(120),
   description: z.string().trim().max(2000).optional(),
   city: z.string().trim().max(120).optional(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
   startsAt: z.string().datetime(),
 });
 
@@ -195,6 +200,7 @@ export type PublicProfile = {
   photos: string[];
   city: string | null;
   district: string | null;
+  country: string | null;
   interests: string[];
   referred: boolean;
   sharedInterests: string[];
@@ -210,3 +216,19 @@ export type ApiErrorBody = {
     details?: unknown;
   };
 };
+
+// --- Yapay zeka uclari -------------------------------------------------
+export const smartRepliesRequestSchema = z.object({ conversationId: uuidSchema });
+export type SmartRepliesRequest = z.infer<typeof smartRepliesRequestSchema>;
+
+export const icebreakerRequestSchema = z.object({ userId: uuidSchema });
+export type IcebreakerRequest = z.infer<typeof icebreakerRequestSchema>;
+
+export const bioCoachRequestSchema = z.object({ bio: z.string().trim().max(2000) });
+export type BioCoachRequest = z.infer<typeof bioCoachRequestSchema>;
+
+export const summarizeRequestSchema = z.object({ conversationId: uuidSchema });
+export type SummarizeRequest = z.infer<typeof summarizeRequestSchema>;
+
+export const matchNoteRequestSchema = z.object({ userId: uuidSchema });
+export type MatchNoteRequest = z.infer<typeof matchNoteRequestSchema>;

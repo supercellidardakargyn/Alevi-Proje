@@ -11,16 +11,16 @@ import { toPublicProfile, publicProfileSelect } from '../services/profiles';
 export function profileRoutes(prisma: PrismaClient): Router {
   const router = Router();
   router.get('/me', asyncHandler(async (req, res) => {
-    const user = await prisma.user.findFirst({ where: { id: userId(req), deletedAt: null }, select: { ...publicProfileSelect, inviteCode: true } });
+    const user = await prisma.user.findFirst({ where: { id: userId(req), deletedAt: null }, select: { ...publicProfileSelect, inviteCode: true, showMapLocation: true } });
     if (!user) throw new ApiError(404, 'USER_NOT_FOUND', 'Profile not found');
-    res.json({ data: { ...toPublicProfile(user), inviteCode: user.inviteCode } });
+    res.json({ data: { ...toPublicProfile(user), inviteCode: user.inviteCode, showMapLocation: user.showMapLocation } });
   }));
 
   router.patch('/me', validate(updateProfileRequestSchema), asyncHandler(async (req, res) => {
     const currentUserId = userId(req);
     const existing = await prisma.user.findFirst({ where: { id: currentUserId, deletedAt: null }, select: { id: true } });
     if (!existing) throw new ApiError(404, 'USER_NOT_FOUND', 'Profile not found');
-    const body = req.body as { displayName?: string; bio?: string | null; avatarUrl?: string | null; photos?: string[]; city?: string | null; district?: string | null; latitude?: number | null; longitude?: number | null; interests?: string[]; sensitivePayload?: Record<string, unknown> | null };
+    const body = req.body as { displayName?: string; bio?: string | null; avatarUrl?: string | null; photos?: string[]; city?: string | null; district?: string | null; country?: string | null; latitude?: number | null; longitude?: number | null; showMapLocation?: boolean; interests?: string[]; sensitivePayload?: Record<string, unknown> | null };
     const data: Record<string, unknown> = {};
     if (body.displayName !== undefined) data.displayName = body.displayName;
     if (body.bio !== undefined) data.bio = body.bio;
@@ -31,8 +31,10 @@ export function profileRoutes(prisma: PrismaClient): Router {
     }
     if (body.city !== undefined) data.city = body.city;
     if (body.district !== undefined) data.district = body.district;
+    if (body.country !== undefined) data.country = body.country;
     if (body.latitude !== undefined) data.latitude = body.latitude;
     if (body.longitude !== undefined) data.longitude = body.longitude;
+    if (body.showMapLocation !== undefined) data.showMapLocation = body.showMapLocation;
     if (body.interests !== undefined) {
       data.interests = body.interests.map((tag: string) => tag.trim()).filter((tag: string) => tag.length > 0).slice(0, 10);
     }

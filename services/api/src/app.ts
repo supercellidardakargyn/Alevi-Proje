@@ -20,6 +20,8 @@ import { safetyRoutes } from './routes/safety';
 import { communityRoutes } from './routes/communities';
 import { messageRoutes } from './routes/messages';
 import { callRoutes } from './routes/calls';import { mediaRoutes } from './routes/media';
+import { aiRoutes } from './routes/ai';
+import { mapRoutes } from './routes/map';
 import { eventRoutes, deviceRoutes } from './routes/events';
 import { supportRoutes, supportAdminRoutes } from './routes/support';
 import { MeshManager } from './mesh/manager';
@@ -119,6 +121,8 @@ export async function createApp(): Promise<AppContext> {
   secured.use('/communities', communityRoutes(prisma));
   secured.use('/messages', writeLimiter(), messageRoutes(prisma));
   secured.use('/calls', writeLimiter(), callRoutes(prisma));
+  secured.use('/ai', writeLimiter(), aiRoutes(prisma));
+  secured.use('/map', mapRoutes(prisma));
   secured.use('/', mediaRoutes(prisma));
   secured.use('/events', eventRoutes(prisma));
   secured.use('/devices', deviceRoutes(prisma));

@@ -79,8 +79,10 @@ model User {
   googleSub                  String?               @unique @map("google_sub") @db.VarChar(255)
   city                       String?               @db.VarChar(120)
   district                   String?               @db.VarChar(120)
+  country                    String?               @db.VarChar(120)
   latitude                   Float?
   longitude                  Float?
+  showMapLocation            Boolean               @default(true) @map("show_map_location")
   interests                  String[]              @default([])
   inviteCode                 String                @unique @map("invite_code") @db.VarChar(12)
   invitedById                String?               @map("invited_by") @db.Uuid
@@ -369,6 +371,8 @@ model Event {
   title       String          @db.VarChar(120)
   description String?         @db.Text
   city        String?         @db.VarChar(120)
+  latitude    Float?
+  longitude   Float?
   startsAt    DateTime        @map("starts_at")
   createdAt   DateTime        @default(now()) @map("created_at")
   creator     User            @relation("eventsCreated", fields: [creatorId], references: [id], onDelete: Cascade)

@@ -9,7 +9,7 @@ export function discoverRoutes(prisma: PrismaClient): Router {
   const router = Router();
   router.get('/', validate(discoverQuerySchema, 'query'), asyncHandler(async (req, res) => {
     const currentUserId = userId(req);
-    const query = req.query as unknown as { cursor?: string; limit: number; q?: string; city?: string; district?: string; latitude?: number; longitude?: number; maxDistanceKm?: number };
+    const query = req.query as unknown as { cursor?: string; limit: number; q?: string; city?: string; district?: string; country?: string; latitude?: number; longitude?: number; maxDistanceKm?: number };
     const [me, blocks, swipes, myAttendances] = await Promise.all([
       prisma.user.findUnique({ where: { id: currentUserId }, select: { interests: true } }),
       prisma.block.findMany({ where: { OR: [{ blockerId: currentUserId }, { blockedId: currentUserId }] }, select: { blockerId: true, blockedId: true } }),
@@ -25,6 +25,7 @@ export function discoverRoutes(prisma: PrismaClient): Router {
         deletedAt: null,
         id: { notIn: [...excluded] },
         ...(query.q ? { displayName: { contains: query.q, mode: 'insensitive' as const } } : {}),
+        ...(query.country ? { country: { equals: query.country, mode: 'insensitive' as const } } : {}),
         ...(query.city ? { city: { equals: query.city, mode: 'insensitive' as const } } : {}),
         ...(query.district ? { district: { equals: query.district, mode: 'insensitive' as const } } : {})
       },

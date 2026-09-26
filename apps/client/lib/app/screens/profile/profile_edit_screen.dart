@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../services/api_client.dart';
+import '../../services/location_data.dart';
 import '../../services/session.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_widgets.dart';
+import 'location_fields.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   const ProfileEditScreen({super.key, required this.apiClient});
@@ -20,9 +22,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _bioController = TextEditingController();
-  final _cityController = TextEditingController();
-  final _districtController = TextEditingController();
   final _interestController = TextEditingController();
+  LocationChoice _location = const LocationChoice();
   List<String> _interests = const [];
   List<String> _photos = const [];
   bool _loading = true;
@@ -41,8 +42,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   void dispose() {
     _nameController.dispose();
     _bioController.dispose();
-    _cityController.dispose();
-    _districtController.dispose();
     _interestController.dispose();
     super.dispose();
   }
@@ -54,14 +53,17 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       if (data is Map && mounted) {
         _nameController.text = (data['displayName'] ?? '').toString();
         _bioController.text = (data['bio'] ?? '').toString();
-        _cityController.text = (data['city'] ?? '').toString();
-        _districtController.text = (data['district'] ?? '').toString();
         _avatarUrl = data['avatarUrl']?.toString();
         final tags = (data['interests'] as List? ?? const []).map((tag) => tag.toString()).toList();
         final photos = (data['photos'] as List? ?? const []).map((url) => url.toString()).where((url) => url.isNotEmpty).toList();
         setState(() {
           _interests = tags;
           _photos = photos;
+          _location = LocationChoice(
+            country: data['country']?.toString(),
+            city: data['city']?.toString(),
+            district: data['district']?.toString(),
+          );
         });
       }
     } catch (_) {
@@ -148,8 +150,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       await widget.apiClient.patch('/v1/profile/me', body: {
         'displayName': _nameController.text.trim(),
         'bio': _bioController.text.trim().isEmpty ? null : _bioController.text.trim(),
-        'city': _cityController.text.trim().isEmpty ? null : _cityController.text.trim(),
-        'district': _districtController.text.trim().isEmpty ? null : _districtController.text.trim(),
+        'city': _location.city,
+        'district': _location.district,
+        'country': _location.country,
         'interests': _interests,
       },);
       if (!mounted) return;
@@ -259,22 +262,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                         validator: (value) => value == null || value.trim().length < 2 ? 'En az 2 karakter.' : null,
                       ),
                       const SizedBox(height: 14),
-                      TextFormField(
-                        controller: _cityController,
-                        decoration: const InputDecoration(labelText: 'Şehir', prefixIcon: Icon(Icons.location_on_outlined)),
+                      LocationField(
+                        choice: _location,
+                        onChanged: (value) => setState(() => _location = value),
                       ),
                       const SizedBox(height: 14),
-                      TextFormField(
-                        controller: _districtController,
-                        decoration: const InputDecoration(labelText: 'İlçe (opsiyonel)', prefixIcon: Icon(Icons.map_outlined)),
-                      ),
-                      const SizedBox(height: 14),
-                      TextFormField(
-                        controller: _bioController,
-                        maxLines: 4,
-                        maxLength: 500,
-                        decoration: const InputDecoration(labelText: 'Hakkında (beğenmek için en az 20 karakter gerekli)', hintText: 'Kendini kısaca tanıt...'),
-                      ),
+                      BioField(controller: _bioController, apiClient: widget.apiClient),
                       const SizedBox(height: 14),
                       const Align(
                         alignment: Alignment.centerLeft,

@@ -8,6 +8,7 @@ import '../../services/session.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_widgets.dart';
 import '../call/call_screen.dart';
+import '../ai/ai_sheet.dart';
 import '../main_shell.dart';
 import '../matches/matches_screen.dart';
 
@@ -183,12 +184,22 @@ class _ChatMessage {
 }
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key, required this.name, this.conversationId, this.otherUserId, required this.apiClient});
+  const ChatScreen({
+    super.key,
+    required this.name,
+    this.conversationId,
+    this.otherUserId,
+    required this.apiClient,
+    this.initialDraft,
+  });
 
   final String name;
   final String? conversationId;
   final String? otherUserId;
   final ApiClientPort apiClient;
+
+  /// Buz kirici onerisi gibi hazir gelen mesaj taslagi.
+  final String? initialDraft;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -208,6 +219,8 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    final draft = widget.initialDraft;
+    if (draft != null && draft.isNotEmpty) _controller.text = draft;
     if (_remote) {
       Session.openConversationId = widget.conversationId;
       _load();
@@ -378,6 +391,19 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             icon: const Icon(Icons.videocam_outlined),
             tooltip: 'Görüntülü arama',
           ),
+          IconButton(
+            onPressed: () => showSmartRepliesSheet(
+              context,
+              apiClient: widget.apiClient,
+              conversationId: widget.conversationId ?? '',
+              onPick: (text) {
+                _controller.text = text;
+                _send();
+              },
+            ),
+            icon: const Icon(Icons.auto_awesome),
+            tooltip: 'Akıllı yanıtlar',
+          ),
           IconButton(onPressed: () => _showSafety(context), icon: const Icon(Icons.shield_outlined), tooltip: 'Güvenlik'),
         ],
       ),
@@ -438,7 +464,20 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
                       controller: _controller,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _send(),
-                      decoration: const InputDecoration(hintText: 'Bir mesaj yaz…'),
+                      decoration: InputDecoration(
+                        hintText: 'Bir mesaj yaz…',
+                        suffixIcon: _remote
+                            ? IconButton(
+                                onPressed: () => showSummarySheet(
+                                  context,
+                                  apiClient: widget.apiClient,
+                                  conversationId: widget.conversationId ?? '',
+                                ),
+                                icon: const Icon(Icons.summarize_outlined, size: 20),
+                                tooltip: 'Sohbeti özetle',
+                              )
+                            : null,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),

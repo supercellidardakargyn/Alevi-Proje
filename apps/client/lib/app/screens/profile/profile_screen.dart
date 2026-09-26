@@ -25,6 +25,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _showOnline = true;
+  bool _showOnMap = true;
   String _displayName = '';
   String? _avatarUrl;
   String? _inviteCode;
@@ -49,6 +50,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _avatarUrl = data['avatarUrl']?.toString();
           final code = data['inviteCode']?.toString();
           if (code != null && code.isNotEmpty) _inviteCode = code;
+          if (data['showMapLocation'] is bool) _showOnMap = data['showMapLocation'] as bool;
         });
       }
     } catch (_) {
@@ -123,6 +125,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 22),
           const SectionTitle('Profil görünürlüğü'),
+          const SizedBox(height: 10),
+          Card(
+            child: SwitchListTile.adaptive(
+              value: _showOnMap,
+              onChanged: (value) async {
+                setState(() => _showOnMap = value);
+                final messenger = ScaffoldMessenger.of(context);
+                try {
+                  await widget.apiClient.patch('/v1/profile/me', body: {'showMapLocation': value});
+                } catch (_) {
+                  if (mounted) {
+                    setState(() => _showOnMap = !value);
+                    messenger.showSnackBar(
+                      const SnackBar(content: Text('Ayar kaydedilemedi.')),
+                    );
+                  }
+                }
+              },
+              title: const Text('Haritada görün', style: TextStyle(fontWeight: FontWeight.w700)),
+              subtitle: Text('Yakınındaki üyeler haritada yaklaşık konumunu görür.', style: TextStyle(color: AppInk.subtle)),
+              secondary: const Icon(Icons.map_outlined, color: AppColors.burgundy),
+            ),
+          ),
           const SizedBox(height: 10),
           Card(
             child: SwitchListTile.adaptive(

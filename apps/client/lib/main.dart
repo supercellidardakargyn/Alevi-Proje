@@ -4,6 +4,7 @@ import 'app/app.dart';
 import 'app/config/app_config.dart';
 import 'app/services/api_client.dart';
 import 'app/services/secure_storage.dart';
+import 'app/services/tray_stub.dart' if (dart.library.io) 'app/services/tray_service.dart';
 
 import 'app/services/session.dart';
 
@@ -24,4 +25,6 @@ Future<void> main() async {
       storage: storage,
     ),
   );
+  // Masaustunde sistem cekmecesi (carpida kapatma yerine gizleme).
+  initTray();
 }

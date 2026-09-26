@@ -1,7 +1,7 @@
 import { User } from '@prisma/client';
 import { PublicProfile } from '@alevi/contracts';
 
-export type PublicUser = Pick<User, 'id' | 'displayName' | 'bio' | 'avatarUrl' | 'photos' | 'city' | 'district' | 'interests' | 'createdAt'> & {
+export type PublicUser = Pick<User, 'id' | 'displayName' | 'bio' | 'avatarUrl' | 'photos' | 'city' | 'district' | 'country' | 'interests' | 'createdAt'> & {
   invitedById?: string | null;
 };
 
@@ -13,6 +13,7 @@ export const publicProfileSelect = {
   photos: true,
   city: true,
   district: true,
+  country: true,
   interests: true,
   invitedById: true,
   createdAt: true
@@ -32,6 +33,7 @@ export function toPublicProfile(
     photos: user.photos,
     city: user.city,
     district: user.district,
+    country: user.country,
     interests: user.interests,
     referred: user.invitedById != null,
     sharedInterests,

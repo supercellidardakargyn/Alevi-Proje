@@ -38,11 +38,9 @@ $apiFiles = @{
 $main = Join-Path $bundles 'alevi-main'
 $mainFiles = $apiFiles.Clone()
 $mainFiles['deploy/node-main/index.js'] = 'index.js'
-if (Test-Path -LiteralPath (Join-Root 'deploy/gateway/.env')) {
-  $mainFiles['deploy/gateway/.env'] = '.env'
-} else {
-  $mainFiles['deploy/gateway/.env.example'] = '.env'
-}
+# UYARI: gercek .env ASLA paketlenmez (sunucudaki uretim degerleri sizmasin).
+# Taze kurulumda `.env.example` dosyasi `.env` adiyla kopyalanip doldurulur.
+$mainFiles['deploy/gateway/.env.example'] = '.env.example'
 $mainFiles['deploy/KURULUM-NODE.md'] = 'KURULUM.md'
 $mainFiles['site'] = 'site'
 $mainFiles['services/gateway/package.json'] = 'services/gateway/package.json'
@@ -64,11 +62,8 @@ Get-ChildItem -LiteralPath (Join-Path $main 'services/api/dist') -Recurse -File 
 $edge = Join-Path $bundles 'alevi-edge'
 $edgeFiles = $apiFiles.Clone()
 $edgeFiles['deploy/node-edge/index.js'] = 'index.js'
-if (Test-Path -LiteralPath (Join-Root 'deploy/edge/.env')) {
-  $edgeFiles['deploy/edge/.env'] = '.env'
-} else {
-  $edgeFiles['deploy/edge/.env.example'] = '.env'
-}
+# UYARI: gercek .env ASLA paketlenmez (bkz. ana sunucu notu).
+$edgeFiles['deploy/edge/.env.example'] = '.env.example'
 $edgeFiles['deploy/KURULUM-NODE.md'] = 'KURULUM.md'
 Stage-Tree $edge $edgeFiles
 Get-ChildItem -LiteralPath (Join-Path $edge 'services/api/dist') -Recurse -File |
@@ -97,9 +92,9 @@ $winSrc = Join-Root 'site/indir/can-meydani-windows-x64.zip'
 if (Test-Path -LiteralPath $winSrc) {
   Copy-Item -LiteralPath $winSrc -Destination (Join-Root 'dist/can-meydani-windows-x64.zip') -Force
 }
-$setupSrc = Join-Root 'site/indir/CanMeydani-Kurulum-0.5.6.exe'
+$setupSrc = Join-Root 'site/indir/CanMeydani-Kurulum-0.6.0.exe'
 if (Test-Path -LiteralPath $setupSrc) {
-  Copy-Item -LiteralPath $setupSrc -Destination (Join-Root 'dist/CanMeydani-Kurulum-0.5.6.exe') -Force
+  Copy-Item -LiteralPath $setupSrc -Destination (Join-Root 'dist/CanMeydani-Kurulum-0.6.0.exe') -Force
 }
 $linuxSrc = Join-Root 'site/indir/can-meydani-linux-x64.tar.gz'
 if (Test-Path -LiteralPath $linuxSrc) {

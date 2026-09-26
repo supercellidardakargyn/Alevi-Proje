@@ -3,12 +3,15 @@ import 'package:flutter/material.dart';
 import '../../models/profile.dart';
 import '../../models/active_user.dart';
 import '../../services/api_client.dart';
+import '../../services/location_data.dart';
 import '../../services/location_service.dart';
 import '../../services/secure_storage.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_widgets.dart';
+import '../ai/ai_sheet.dart';
 import '../main_shell.dart';
 import '../messages/messages_screen.dart' show ChatScreen;
+import '../profile/location_fields.dart';
 
 class _GeoPoint {
   const _GeoPoint(this.latitude, this.longitude);
@@ -41,8 +44,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   Profile? _lastRemoved;
   bool _undoBusy = false;
   double _distanceKm = 25;
-  String _cityFilter = '';
-  String _districtFilter = '';
+  LocationChoice _location = const LocationChoice();
   _GeoPoint? _geo;
   bool _filterBusy = false;
   final Set<String> _ageRanges = {'26–35'};
@@ -57,13 +59,17 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   Future<void> _restoreFilters() async {
+    final country = await widget.storage.read(key: 'discover_country');
     final city = await widget.storage.read(key: 'discover_city');
     final district = await widget.storage.read(key: 'discover_district');
     final distance = await widget.storage.read(key: 'discover_distance');
     if (!mounted) return;
     setState(() {
-      if (city != null) _cityFilter = city;
-      if (district != null) _districtFilter = district;
+      _location = LocationChoice(
+        country: country?.isEmpty ?? true ? null : country,
+        city: city?.isEmpty ?? true ? null : city,
+        district: district?.isEmpty ?? true ? null : district,
+      );
       final parsed = double.tryParse(distance ?? '');
       if (parsed != null && parsed >= 1 && parsed <= 100) _distanceKm = parsed;
     });
@@ -98,8 +104,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   Future<void> _applyFilters() async {
     setState(() => _filterBusy = true);
     try {
-      await widget.storage.write(key: 'discover_city', value: _cityFilter.trim());
-      await widget.storage.write(key: 'discover_district', value: _districtFilter.trim());
+      await widget.storage.write(key: 'discover_country', value: _location.country ?? '');
+      await widget.storage.write(key: 'discover_city', value: _location.city ?? '');
+      await widget.storage.write(key: 'discover_district', value: _location.district ?? '');
       await widget.storage.write(key: 'discover_distance', value: _distanceKm.round().toString());
       final position = await currentPosition();
       if (position == null) {
@@ -134,12 +141,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     });
     try {
       final params = <String, String>{'limit': '20'};
-      if (_cityFilter.trim().isNotEmpty) {
-        params['city'] = _cityFilter.trim();
-      }
-      if (_districtFilter.trim().isNotEmpty) {
-        params['district'] = _districtFilter.trim();
-      }
+      final country = _location.country;
+      final city = _location.city;
+      final district = _location.district;
+      if (country != null && country.isNotEmpty) params['country'] = country;
+      if (city != null && city.isNotEmpty) params['city'] = city;
+      if (district != null && district.isNotEmpty) params['district'] = district;
       if (_geo != null) {
         params['latitude'] = _geo!.latitude.toString();
         params['longitude'] = _geo!.longitude.toString();
@@ -185,13 +192,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             const SizedBox(height: 18),
             _FilterPanel(
               distanceKm: _distanceKm,
-              city: _cityFilter,
-              district: _districtFilter,
+              location: _location,
               ageRanges: _ageRanges,
               busy: _filterBusy,
               onDistanceChanged: (value) => setState(() => _distanceKm = value),
-              onCityChanged: (value) => setState(() => _cityFilter = value),
-              onDistrictChanged: (value) => setState(() => _districtFilter = value),
+              onLocationChanged: (value) => setState(() => _location = value),
               onAgeToggled: (range) => setState(() {
                 if (_ageRanges.contains(range)) {
                   _ageRanges.remove(range);
@@ -250,6 +255,16 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             )
           else ...[
             ProfileCard(profile: profile),
+            if (profile.id != null) ...[
+              const SizedBox(height: 10),
+              MatchNoteText(apiClient: widget.apiClient, userId: profile.id!),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: _swipeBusy ? null : _openIcebreakers,
+                icon: const Icon(Icons.waving_hand, size: 18),
+                label: const Text('Buz kırıcı önerileri'),
+              ),
+            ],
             if (_swipeError != null) ...[
               const SizedBox(height: 8),
               Text(_swipeError!, style: const TextStyle(color: AppColors.error, fontSize: 12)),
@@ -305,7 +320,27 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
   void _nextProfile() => setState(() => _profileIndex++);
 
-  Future<void> _swipe(String decision) async {
+  /// Buz kirici onerisi: secilen cumle begeni bosluk birakmaz, mesaj
+  /// taslagi olarak sohbete tasinir; kullanici gondermeden once duzenler.
+  Future<void> _openIcebreakers() async {
+    final cards = _cards;
+    if (cards.isEmpty || _swipeBusy) return;
+    final target = cards[_profileIndex % cards.length];
+    final userId = target.id;
+    if (userId == null) return;
+    String? draft;
+    await showIcebreakerSheet(
+      context,
+      apiClient: widget.apiClient,
+      userId: userId,
+      displayName: target.name,
+      onPick: (text) => draft = text,
+    );
+    if (draft == null || !mounted) return;
+    await _swipe('LIKE', openChatWith: draft!);
+  }
+
+  Future<void> _swipe(String decision, {String? openChatWith}) async {
     final cards = _cards;
     if (cards.isEmpty) return;
     final target = cards[_profileIndex % cards.length];
@@ -334,6 +369,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               conversationId: conversationId,
               otherUserId: targetId,
               apiClient: widget.apiClient,
+              initialDraft: openChatWith,
             ),
           ),
         );
@@ -446,12 +482,10 @@ class _FilterPanel extends StatefulWidget {
   const _FilterPanel({
     required this.onClose,
     required this.distanceKm,
-    required this.city,
-    required this.district,
+    required this.location,
     required this.ageRanges,
     required this.onDistanceChanged,
-    required this.onCityChanged,
-    required this.onDistrictChanged,
+    required this.onLocationChanged,
     required this.onAgeToggled,
     required this.onApply,
     required this.busy,
@@ -459,12 +493,10 @@ class _FilterPanel extends StatefulWidget {
 
   final VoidCallback onClose;
   final double distanceKm;
-  final String city;
-  final String district;
+  final LocationChoice location;
   final Set<String> ageRanges;
   final ValueChanged<double> onDistanceChanged;
-  final ValueChanged<String> onCityChanged;
-  final ValueChanged<String> onDistrictChanged;
+  final ValueChanged<LocationChoice> onLocationChanged;
   final ValueChanged<String> onAgeToggled;
   final VoidCallback onApply;
   final bool busy;
@@ -477,22 +509,11 @@ class _FilterPanel extends StatefulWidget {
 
 class _FilterPanelState extends State<_FilterPanel> {
   late double _localDistance;
-  late final TextEditingController _cityController;
-  late final TextEditingController _districtController;
 
   @override
   void initState() {
     super.initState();
     _localDistance = widget.distanceKm;
-    _cityController = TextEditingController(text: widget.city);
-    _districtController = TextEditingController(text: widget.district);
-  }
-
-  @override
-  void dispose() {
-    _cityController.dispose();
-    _districtController.dispose();
-    super.dispose();
   }
 
   @override
@@ -520,26 +541,16 @@ class _FilterPanelState extends State<_FilterPanel> {
               onChanged: (value) => setState(() => _localDistance = value),
               onChangeEnd: widget.onDistanceChanged,
             ),
-            TextField(
-              controller: _cityController,
-              textInputAction: TextInputAction.done,
-              onChanged: widget.onCityChanged,
-              decoration: const InputDecoration(
-                labelText: 'Şehir (boş bırakırsan tüm şehirler)',
-                prefixIcon: Icon(Icons.location_on_outlined),
-              ),
+            LocationField(
+              choice: widget.location,
+              onChanged: widget.onLocationChanged,
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _districtController,
-              textInputAction: TextInputAction.done,
-              onChanged: widget.onDistrictChanged,
-              decoration: const InputDecoration(
-                labelText: 'İlçe (opsiyonel)',
-                prefixIcon: Icon(Icons.map_outlined),
-              ),
+            const SizedBox(height: 4),
+            Text(
+              'Konum seçmezsen tüm dünya ve tüm şehirler listelenir.',
+              style: TextStyle(fontSize: 12, color: AppInk.subtle),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               children: [
