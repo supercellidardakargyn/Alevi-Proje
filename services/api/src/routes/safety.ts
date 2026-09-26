@@ -2,9 +2,10 @@ import { Router } from 'express';
 import { blockRequestSchema, reportRequestSchema } from '@alevi/contracts';
 import { PrismaClient } from '@prisma/client';
 import { validate } from '../middleware/validation';
-import { encryptText } from '../security/fields';
+import { encryptText, decryptText } from '../security/fields';
 import { ApiError } from '../middleware/errors';
 import { asyncHandler, notFoundIfNull, routeParam, userId } from './route-utils';
+import { triageReport } from '../services/reflex';
 
 export function safetyRoutes(prisma: PrismaClient): Router {
   const router = Router();
@@ -41,6 +42,8 @@ export function safetyRoutes(prisma: PrismaClient): Router {
       if (!member) throw new ApiError(403, 'FORBIDDEN', 'You are not a member of this conversation');
     }
     const report = await prisma.report.create({ data: { reporterId, ...(body.userId ? { reportedId: body.userId } : {}), ...(body.messageId ? { messageId: body.messageId } : {}), reason: body.reason, details: body.details ? encryptText(body.details) : undefined } });
+    // Reflex triyaj arka planda calisir, yaniti geciktirmez. Kapaliysa rapor OPEN kalir.
+    void triageReport(prisma, report.id).catch(() => undefined);
     res.status(201).json({ data: { id: report.id, status: report.status, createdAt: report.createdAt.toISOString() } });
   }));
   return router;

@@ -27,6 +27,10 @@ const envSchema = z.object({
   AI_API_URL: z.string().default('https://ai-gateway.vercel.sh/v1'),
   AI_API_KEY: z.string().default(''),
   AI_MODEL: z.string().default(''),
+  REFLEX_ENABLED: z.string().default('false'),
+  REFLEX_API_URL: z.string().default('https://api.typesafe.ai/v1/systemone'),
+  REFLEX_API_KEY: z.string().default(''),
+  REFLEX_MODEL: z.string().default('jev-latest'),
   UPLOAD_DIR: z.string().default('./uploads'),
   MAX_UPLOAD_MB: z.coerce.number().int().min(1).max(20).default(5),
   DAILY_LIKE_LIMIT: z.coerce.number().int().min(1).max(500).default(20),
@@ -88,6 +92,12 @@ export interface AppConfig {
   maxUploadMb: number;
   dailyLikeLimit: number;
   ai: {
+    enabled: boolean;
+    apiUrl: string;
+    apiKey: string;
+    model: string;
+  };
+  reflex: {
     enabled: boolean;
     apiUrl: string;
     apiKey: string;
@@ -211,6 +221,12 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
       apiUrl: parsed.AI_API_URL.replace(/\/$/, ''),
       apiKey: parsed.AI_API_KEY,
       model: parsed.AI_MODEL
+    },
+    reflex: {
+      enabled: parseBoolean(parsed.REFLEX_ENABLED),
+      apiUrl: parsed.REFLEX_API_URL.replace(/\/$/, ''),
+      apiKey: parsed.REFLEX_API_KEY,
+      model: parsed.REFLEX_MODEL
     },
     accessTokenTtlSeconds: parsed.ACCESS_TOKEN_TTL_SECONDS,
     refreshTokenTtlSeconds: parsed.REFRESH_TOKEN_TTL_SECONDS,

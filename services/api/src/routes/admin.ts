@@ -10,6 +10,7 @@ import { supportAdminRoutes } from './support';
 import { asyncHandler, routeParam, userId } from './route-utils';
 import { ApiError } from '../middleware/errors';
 import { MeshManager, meshHealth } from '../mesh/manager';
+import { writeAudit } from '../services/audit';
 
 const adminListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50)
@@ -20,28 +21,6 @@ function maskEmail(email: string): string {
   if (!domain) return '***';
   const head = (local ?? '').slice(0, 1) || '*';
   return `${head}***@${domain}`;
-}
-
-async function writeAudit(
-  prisma: PrismaClient,
-  entry: { actorId?: string; action: string; targetType: string; targetId?: string; reason?: string; metadata?: Record<string, unknown> }
-): Promise<void> {
-  try {
-    await prisma.auditLog.create({
-      data: {
-        actorId: entry.actorId,
-        action: entry.action,
-        targetType: entry.targetType,
-        targetId: entry.targetId,
-        reason: entry.reason,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        metadata: (entry.metadata ?? undefined) as any
-      }
-    });
-  } catch {
-    // Audit kaybi gorunmez olmamali.
-    console.warn(`[audit] yazilamadi: ${entry.action} -> ${entry.targetType}/${entry.targetId ?? '-'}`);
-  }
 }
 
 export function adminRoutes(prisma: PrismaClient, mesh: MeshManager): Router {
@@ -146,7 +125,11 @@ export function adminRoutes(prisma: PrismaClient, mesh: MeshManager): Router {
   }));
   router.get('/reports', validate(adminListQuerySchema, 'query'), asyncHandler(async (req, res) => {
     const query = req.query as unknown as { limit: number };
-    const reports = await prisma.report.findMany({ where: { status: { in: ['OPEN', 'REVIEWING'] } }, orderBy: { createdAt: 'asc' }, take: query.limit });
+    const reports = await prisma.report.findMany({
+      where: { status: { in: ['OPEN', 'REVIEWING'] } },
+      orderBy: [{ severity: { sort: 'desc', nulls: 'last' } }, { createdAt: 'asc' }],
+      take: query.limit
+    });
     res.json({ data: reports.map((report) => ({ ...report, details: report.details ? decryptText(report.details) : null })) });
   }));
   router.post('/reports/:id/resolve', validate(resolveReportRequestSchema), asyncHandler(async (req, res) => {

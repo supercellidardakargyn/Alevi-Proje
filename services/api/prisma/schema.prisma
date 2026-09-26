@@ -155,6 +155,9 @@ model Report {
   reason     ReportReason
   details    String?      @db.Text
   status     ReportStatus @default(OPEN)
+  severity   Int?         @map("severity")
+  evalCategory String?    @map("eval_category") @db.VarChar(32)
+  autoAction String?      @map("auto_action") @db.VarChar(32)
   createdAt  DateTime     @default(now()) @map("created_at")
   reporter   User         @relation("reportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
   reported   User?        @relation("reportsAgainst", fields: [reportedId], references: [id], onDelete: SetNull)

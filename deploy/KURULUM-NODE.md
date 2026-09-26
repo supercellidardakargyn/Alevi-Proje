@@ -99,3 +99,30 @@ kütüphanenin yetmediği yerde başvurulur. Bu yüzden yanıtlar anında gelir 
 Tüm istekler sunucuda tek bir FIFO kuyruktan geçer: aynı anda en fazla 1 istek,
 istekler arası en az 1,5 sn bekleme, istek başına 30 sn zaman aşımı. Böylece
 kota tükenmez ve uygulama kilitlenmez.
+
+## Reflex moderasyon (Jev, istege bagli)
+
+Sikayetler TypeSafe System One degerlendirme modeliyle aninda puanlanir
+(metin uretmez, tek istekte ciddiyet + kategori + mudahale karari doner).
+`.env`:
+
+```
+REFLEX_ENABLED=true
+REFLEX_API_URL=https://api.typesafe.ai/v1/systemone
+REFLEX_API_KEY=<TypeSafe konsol anahtari (console.typesafe.ai/keys)>
+REFLEX_MODEL=jev-latest
+```
+
+Dikkat: bu anahtar Vercel AI Gateway anahtari DEGIL, TypeSafe konsolundan
+ayrica alinir. Kapaliysa sikayetler eski usulle OPEN kalir, hicbir sey degismez.
+
+Davranis:
+
+| Jev karari | Ne olur |
+| --- | --- |
+| Ciddiyet 3-4 + yuksek guven | Hedef **siradan uyeseyse** hesap otomatik kapatilir, rapor cozulur, denetim izi yazilir (`actor: reflex`) |
+| Ciddiyet 2 veya mudahale gerekli | Rapor REVIEWING olur, moderasyon kuyrugunun basina gecer |
+| Zararsiz / dusuk guven | Rapor OPEN kalir |
+
+Guvenlik klitleri: yonetici ve moderatorlere oto-yasak YOK, silinmis hesaba
+islem YOK, supheli durumda insan karari beklenir (rapor kuyrukta kalir).
