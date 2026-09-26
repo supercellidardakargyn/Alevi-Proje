@@ -518,39 +518,87 @@ class _FilterPanelState extends State<_FilterPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: AppInk.divider),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Tercihler', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.burgundy.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.tune, size: 20, color: AppColors.burgundy),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Keşfet tercihleri', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+                      const SizedBox(height: 2),
+                      Text('Sana uygun kişileri bulalım', style: TextStyle(fontSize: 12, color: AppInk.subtle)),
+                    ],
+                  ),
+                ),
                 IconButton(onPressed: widget.onClose, icon: const Icon(Icons.close), tooltip: 'Filtreleri kapat'),
               ],
             ),
-            Text('Mesafe: ${_localDistance.round()} km', style: TextStyle(color: AppInk.subtle)),
-            Slider(
-              value: _localDistance,
-              min: 1,
-              max: 100,
-              divisions: 20,
-              label: '${_localDistance.round()} km',
-              onChanged: (value) => setState(() => _localDistance = value),
-              onChangeEnd: widget.onDistanceChanged,
+            const SizedBox(height: 16),
+            const _SectionLabel(icon: Icons.social_distance, label: 'Mesafe'),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Expanded(
+                  child: Slider(
+                    value: _localDistance,
+                    min: 1,
+                    max: 100,
+                    divisions: 20,
+                    label: '${_localDistance.round()} km',
+                    onChanged: (value) => setState(() => _localDistance = value),
+                    onChangeEnd: widget.onDistanceChanged,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: scheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${_localDistance.round()} km',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: scheme.onPrimaryContainer),
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 14),
+            const _SectionLabel(icon: Icons.public, label: 'Konum'),
+            const SizedBox(height: 8),
             LocationField(
               choice: widget.location,
               onChanged: widget.onLocationChanged,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
-              'Konum seçmezsen tüm dünya ve tüm şehirler listelenir.',
+              'Konum seçmezsen tüm dünya listelenir.',
               style: TextStyle(fontSize: 12, color: AppInk.subtle),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
+            const _SectionLabel(icon: Icons.cake_outlined, label: 'Yaş aralığı'),
+            const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               children: [
@@ -562,14 +610,36 @@ class _FilterPanelState extends State<_FilterPanel> {
                   ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 18),
             PrimaryButton(
-              label: widget.busy ? 'Konum alınıyor…' : 'Filtrele',
+              label: widget.busy ? 'Konum alınıyor…' : 'Tercihleri kaydet',
               onPressed: widget.busy ? null : widget.onApply,
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 15, color: AppInk.subtle),
+        const SizedBox(width: 6),
+        Text(
+          label.toUpperCase(),
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: AppInk.subtle),
+        ),
+      ],
     );
   }
 }
