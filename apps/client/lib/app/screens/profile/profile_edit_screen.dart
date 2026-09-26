@@ -22,6 +22,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _bioController = TextEditingController();
+  final _addressController = TextEditingController();
   final _interestController = TextEditingController();
   LocationChoice _location = const LocationChoice();
   List<String> _interests = const [];
@@ -42,6 +43,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   void dispose() {
     _nameController.dispose();
     _bioController.dispose();
+    _addressController.dispose();
     _interestController.dispose();
     super.dispose();
   }
@@ -53,6 +55,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       if (data is Map && mounted) {
         _nameController.text = (data['displayName'] ?? '').toString();
         _bioController.text = (data['bio'] ?? '').toString();
+        _addressController.text = (data['address'] ?? '').toString();
         _avatarUrl = data['avatarUrl']?.toString();
         final tags = (data['interests'] as List? ?? const []).map((tag) => tag.toString()).toList();
         final photos = (data['photos'] as List? ?? const []).map((url) => url.toString()).where((url) => url.isNotEmpty).toList();
@@ -153,6 +156,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         'city': _location.city,
         'district': _location.district,
         'country': _location.country,
+        'address': _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
         'interests': _interests,
       },);
       if (!mounted) return;
@@ -265,6 +269,19 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       LocationField(
                         choice: _location,
                         onChanged: (value) => setState(() => _location = value),
+                      ),
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: _addressController,
+                        maxLines: 2,
+                        maxLength: 300,
+                        textInputAction: TextInputAction.done,
+                        decoration: const InputDecoration(
+                          labelText: 'Açık adres (sadece sen görürsün)',
+                          hintText: 'Mahalle, sokak, bina ve daire no',
+                          prefixIcon: Icon(Icons.home_outlined),
+                          helperText: 'Kimseyle paylaşılmaz, keşfette görünmez.',
+                        ),
                       ),
                       const SizedBox(height: 14),
                       BioField(controller: _bioController, apiClient: widget.apiClient),

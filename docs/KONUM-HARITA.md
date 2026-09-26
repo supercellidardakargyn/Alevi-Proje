@@ -36,6 +36,13 @@ Betik, ülke başına en büyük 30 şehri + nüfusu 50.000 üzeri şehirleri (e
 Sunucu tarafı: `services/api/prisma/migrations/0012_user_country` (`users.country`),
 `discover.ts` içinde `country`/`city`/`district` filtresi.
 
+### Açık adres (özel alan)
+
+Profil düzenlemede **"Açık adres"** alanı vardır (`users.address`, en fazla 500
+karakter). Bu alan **asla** herkese açık profilde, keşfette, eşleşmede veya
+haritada dönülmez; yalnızca `/v1/profile/me` yanıtında sahibine gösterilir.
+Migration: `0015_user_address`.
+
 ## Harita
 
 `apps/client/lib/app/screens/map/map_screen.dart` — ana sekmede **Harita**.

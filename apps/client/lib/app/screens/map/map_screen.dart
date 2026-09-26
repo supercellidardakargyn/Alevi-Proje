@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -119,6 +121,12 @@ class _Pin {
 const double _tileSize = 256.0;
 const Color _tileBackground = Color(0xFFE8E4DE);
 
+/// OSM kullanim sartlari gecerli bir istemci tanimi ister; aksi halde
+/// kutular engellenebilir (ozellikle masaustunde yogun kullanimda).
+const Map<String, String> _tileHeaders = {
+  'User-Agent': 'CanMeydani/0.6.0 (contact: hi@canmeydani.com.tr)',
+};
+
 /// Web Mercator: coor -> dunya pikseli.
 Offset _project(double lat, double lng, double zoom) {
   final worldSize = _tileSize * math.pow(2.0, zoom);
@@ -138,6 +146,7 @@ class _MapScreenState extends State<MapScreen> {
   bool _loading = true;
   String? _error;
   _Pin? _selected;
+  Offset? _doubleTapPos;
 
   @override
   void initState() {
@@ -217,13 +226,59 @@ class _MapScreenState extends State<MapScreen> {
     final next = value.clamp(3.0, 18.0);
     if (next == _zoom) return;
     setState(() => _zoom = next);
-    // Görüş alanı genişledikçe arama yarıçapını otomatik büyüt.
-    final spanKm = 320 / math.pow(2.0, next - 8.0);
-    final nextRadius = spanKm.clamp(5.0, 500.0);
-    if ((nextRadius - _radiusKm).abs() >= 10) {
-      _radiusKm = nextRadius;
-      _load();
+    _scheduleRadiusRefresh();
+  }
+
+  Timer? _radiusTimer;
+
+  /// Kaydirma/tekerlek sirasinda art arda yukleme yapilmaz; durunca tek istek.
+  void _scheduleRadiusRefresh() {
+    _radiusTimer?.cancel();
+    _radiusTimer = Timer(const Duration(milliseconds: 700), () {
+      if (!mounted) return;
+      // Görüş alanı genişledikçe arama yarıçapını otomatik büyüt.
+      final spanKm = 320 / math.pow(2.0, _zoom - 8.0);
+      final nextRadius = spanKm.clamp(5.0, 500.0);
+      if ((nextRadius - _radiusKm).abs() >= 10) {
+        setState(() => _radiusKm = nextRadius);
+        _load();
+      }
+    });
+  }
+
+  /// Imlec/focus noktasini sabit tutup yaklasir (masaustu tekerlek + cift tik).
+  void _zoomAt(Offset focalScreen, double delta, Size size) {
+    final next = (_zoom + delta).clamp(3.0, 18.0);
+    if (next == _zoom) return;
+    final worldSize = _tileSize * math.pow(2.0, _zoom);
+    final center = _project(_centerLat, _centerLng, _zoom);
+    final focalWorld = Offset(
+      center.dx + (focalScreen.dx - size.width / 2),
+      center.dy + (focalScreen.dy - size.height / 2),
+    );
+    final lat = _unprojectY(focalWorld.dy, worldSize).clamp(-85.0, 85.0);
+    var lng = focalWorld.dx / worldSize * 360.0 - 180.0;
+    while (lng > 180) {
+      lng -= 360;
     }
+    while (lng < -180) {
+      lng += 360;
+    }
+    final nextCenter = _project(lat, lng, next);
+    final nextWorld = _tileSize * math.pow(2.0, next);
+    var outLng = (nextCenter.dx - (focalScreen.dx - size.width / 2)) / nextWorld * 360.0 - 180.0;
+    while (outLng > 180) {
+      outLng -= 360;
+    }
+    while (outLng < -180) {
+      outLng += 360;
+    }
+    setState(() {
+      _zoom = next;
+      _centerLat = _unprojectY(nextCenter.dy - (focalScreen.dy - size.height / 2), nextWorld).clamp(-85.0, 85.0);
+      _centerLng = outLng;
+    });
+    _scheduleRadiusRefresh();
   }
 
   void _panBy(Offset delta, Size size) {
@@ -265,6 +320,12 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   @override
+  void dispose() {
+    _radiusTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -288,17 +349,30 @@ class _MapScreenState extends State<MapScreen> {
                 return Stack(
                   children: [
                     Positioned.fill(
-                      child: GestureDetector(
-                        onPanUpdate: (details) => _panBy(details.delta, size),
-                        onTapUp: (_) => setState(() => _selected = null),
-                        child: ClipRect(
-                          child: Stack(
-                            children: [
-                              Positioned.fill(
-                                child: _TileLayer(centerLat: _centerLat, centerLng: _centerLng, zoom: _zoom),
-                              ),
-                              ..._pinWidgets(size),
-                            ],
+                      child: Listener(
+                        onPointerSignal: (signal) {
+                          if (signal is PointerScrollEvent) {
+                            final delta = signal.scrollDelta.dy > 0 ? -1.0 : 1.0;
+                            _zoomAt(signal.localPosition, delta, size);
+                          }
+                        },
+                        child: GestureDetector(
+                          onPanUpdate: (details) => _panBy(details.delta, size),
+                          onTapUp: (_) => setState(() => _selected = null),
+                          onDoubleTapDown: (details) => _doubleTapPos = details.localPosition,
+                          onDoubleTap: () {
+                            final pos = _doubleTapPos;
+                            if (pos != null) _zoomAt(pos, 1, size);
+                          },
+                          child: ClipRect(
+                            child: Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: _TileLayer(centerLat: _centerLat, centerLng: _centerLng, zoom: _zoom),
+                                ),
+                                ..._pinWidgets(size),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -406,35 +480,38 @@ class _PinMarker extends StatelessWidget {
     final resolved = Session.resolveAvatar(pin.avatarUrl);
     return GestureDetector(
       onTap: onTap,
-      child: Semantics(
-        button: true,
-        label: '${isEvent ? 'Etkinlik' : 'Üye'}: ${pin.label}',
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (!isEvent && resolved != null)
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                  boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Semantics(
+          button: true,
+          label: '${isEvent ? 'Etkinlik' : 'Üye'}: ${pin.label}',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!isEvent && resolved != null)
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                  ),
+                  child: CircleAvatar(radius: 15, backgroundImage: NetworkImage(resolved)),
+                )
+              else
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: isEvent ? AppColors.burgundy : Theme.of(context).colorScheme.primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2.5),
+                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                  ),
+                  child: Icon(isEvent ? Icons.celebration : Icons.person, size: 16, color: Colors.white),
                 ),
-                child: CircleAvatar(radius: 15, backgroundImage: NetworkImage(resolved)),
-              )
-            else
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: isEvent ? AppColors.burgundy : Theme.of(context).colorScheme.primary,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2.5),
-                  boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
-                ),
-                child: Icon(isEvent ? Icons.celebration : Icons.person, size: 16, color: Colors.white),
-              ),
-            Container(width: 2, height: 6, color: Colors.black38),
-          ],
+              Container(width: 2, height: 6, color: Colors.black38),
+            ],
+          ),
         ),
       ),
     );
@@ -462,6 +539,7 @@ class _TileLayerState extends State<_TileLayer> {
     if (_cache.containsKey(key)) return;
     _cache[key] = Image.network(
       'https://tile.openstreetmap.org/$z/$x/$y.png',
+      headers: _tileHeaders,
       fit: BoxFit.cover,
       gaplessPlayback: true,
       errorBuilder: (_, __, ___) => const ColoredBox(color: _tileBackground),

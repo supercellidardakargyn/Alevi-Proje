@@ -437,6 +437,8 @@ class _RoundAction extends StatelessWidget {
     return Material(
       color: Colors.white,
       shape: const CircleBorder(),
+      elevation: 3,
+      shadowColor: AppColors.burgundy.withValues(alpha: 0.25),
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onPressed,

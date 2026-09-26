@@ -80,6 +80,7 @@ model User {
   city                       String?               @db.VarChar(120)
   district                   String?               @db.VarChar(120)
   country                    String?               @db.VarChar(120)
+  address                    String?               @db.VarChar(500)
   latitude                   Float?
   longitude                  Float?
   showMapLocation            Boolean               @default(true) @map("show_map_location")

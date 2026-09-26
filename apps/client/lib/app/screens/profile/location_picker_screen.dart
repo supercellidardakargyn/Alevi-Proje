@@ -141,8 +141,24 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       appBar: AppBar(
         title: const Text('Konum seç'),
         actions: [
-          if (_countryName != null || _city != null || _district != null)
+          if (_countryName != null || _city != null || _district != null) ...[
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _countryCode = null;
+                  _countryName = null;
+                  _city = null;
+                  _provinceCode = null;
+                  _provinceName = null;
+                  _district = null;
+                  _query = '';
+                  _step = _Step.country;
+                });
+              },
+              child: const Text('Temizle'),
+            ),
             TextButton(onPressed: _confirm, child: const Text('Bitir')),
+          ],
         ],
       ),
       body: data == null

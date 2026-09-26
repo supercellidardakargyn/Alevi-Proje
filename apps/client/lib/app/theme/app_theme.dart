@@ -202,9 +202,13 @@ ThemeData buildAppTheme({AppThemeId id = AppThemeId.bordo}) {
     ),
     cardTheme: CardThemeData(
       color: palette.card,
-      elevation: 0,
+      elevation: 2,
+      shadowColor: palette.primary.withValues(alpha: 0.12),
       margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: palette.border),
+      ),
     ),
     chipTheme: ChipThemeData(
       backgroundColor: palette.border,
@@ -225,6 +229,25 @@ ThemeData buildAppTheme({AppThemeId id = AppThemeId.bordo}) {
       backgroundColor: palette.snackBar,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: palette.card,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+    ),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: palette.card,
+      showDragHandle: true,
+      dragHandleColor: palette.border,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+    ),
+    sliderTheme: SliderThemeData(
+      activeTrackColor: palette.primary,
+      inactiveTrackColor: palette.border,
+      thumbColor: palette.primary,
+      overlayColor: palette.primary.withValues(alpha: 0.12),
+      trackHeight: 4,
     ),
   );
 }

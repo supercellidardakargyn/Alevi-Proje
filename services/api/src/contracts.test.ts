@@ -172,6 +172,13 @@ describe('contracts: profile geo fields', () => {
     assert.equal(updateProfileRequestSchema.safeParse({ latitude: 100 }).success, false);
   });
 
+  it('accepts a private street address but caps its length', () => {
+    const ok = updateProfileRequestSchema.safeParse({ address: 'Örnek Mah. 123. Sk. No: 4 D: 7' });
+    assert.equal(ok.success, true);
+    assert.equal(updateProfileRequestSchema.safeParse({ address: 'a'.repeat(501) }).success, false);
+    assert.equal(updateProfileRequestSchema.safeParse({ address: null }).success, true);
+  });
+
   it('accepts discover geo filters', () => {
     const ok = discoverQuerySchema.safeParse({ latitude: 41.0, longitude: 29.0, maxDistanceKm: 25 });
     assert.equal(ok.success, true);

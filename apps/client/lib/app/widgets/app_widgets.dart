@@ -20,6 +20,13 @@ class AleviLogo extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.burgundy,
             borderRadius: BorderRadius.circular(compact ? 11 : 14),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.burgundy.withValues(alpha: 0.35),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: const Icon(Icons.auto_awesome, color: AppColors.gold, size: 22),
         ),
@@ -50,13 +57,30 @@ class SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppInk.text,
-                fontWeight: FontWeight.w800,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: AppInk.text,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
+            ),
+            const SizedBox(height: 5),
+            Container(
+              width: 30,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.burgundy,
+                borderRadius: BorderRadius.circular(2),
               ),
+            ),
+          ],
         ),
         if (actionLabel != null)
           TextButton(onPressed: onAction, child: Text(actionLabel!)),
@@ -133,8 +157,11 @@ class PrimaryButton extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: primary,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          disabledBackgroundColor: AppInk.divider,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           textStyle: const TextStyle(fontWeight: FontWeight.w700),
+          elevation: 2,
+          shadowColor: AppColors.burgundy.withValues(alpha: 0.35),
         ),
       ),
     );
@@ -226,10 +253,29 @@ class _ProfileCardState extends State<ProfileCard> {
                     bottom: 12,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(12)),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white24),
+                      ),
                       child: Text('${_photoIndex + 1}/${photos.length}', style: const TextStyle(color: Colors.white, fontSize: 12)),
                     ),
                   ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    height: 110,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.transparent, Colors.black54],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
+                ),
                 Positioned(
                   left: 18,
                   bottom: 16,
@@ -328,8 +374,15 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: AppColors.gold, size: 56),
-            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.burgundy.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: AppColors.burgundy, size: 44),
+            ),
+            const SizedBox(height: 18),
             Text(title, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             Text(body, textAlign: TextAlign.center, style: TextStyle(color: AppInk.subtle, height: 1.4)),
