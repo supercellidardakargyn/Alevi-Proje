@@ -13,8 +13,8 @@
 (function () {
   'use strict';
 
-  var PUBLISHER_ID = ''; // TODO: ca-pub-XXXXXXXXXXXXXXXX
-  var SLOT_ID = ''; // TODO: reklam birimi ID (orn. 1234567890)
+  var PUBLISHER_ID = 'ca-pub-8250637076614354';
+  var SLOT_ID = ''; // TODO: AdSense panelinde Reklamlar > Reklam birimi olustur, ID'yi buraya yaz.
 
   // Kimlik girilmediyse sessizce cik.
   if (!PUBLISHER_ID || !SLOT_ID) return;

@@ -1,10 +1,3 @@
 # ads.txt - Google AdSense yayinci bildirimi
-#
-# Bu satiri kendi AdSense yayinci kimliginle degistir.
-# Kimlik panelde: Ayarlar > Dosya yönetimi > ads.txt
-# Kimlik yoksa bu dosyayi bos birakabilirsin; reklam gosterilmez.
-#
-# Örnek biçim:
-# google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
-
-google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
+# Yayinci: canmeydani.com.tr (ca-pub-8250637076614354)
+google.com, pub-8250637076614354, DIRECT, f08c47fec0942fa0
