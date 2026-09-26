@@ -92,9 +92,9 @@ $winSrc = Join-Root 'site/indir/can-meydani-windows-x64.zip'
 if (Test-Path -LiteralPath $winSrc) {
   Copy-Item -LiteralPath $winSrc -Destination (Join-Root 'dist/can-meydani-windows-x64.zip') -Force
 }
-$setupSrc = Join-Root 'site/indir/CanMeydani-Kurulum-0.6.0.exe'
+$setupSrc = Join-Root 'site/indir/CanMeydani-Kurulum-0.6.1.exe'
 if (Test-Path -LiteralPath $setupSrc) {
-  Copy-Item -LiteralPath $setupSrc -Destination (Join-Root 'dist/CanMeydani-Kurulum-0.6.0.exe') -Force
+  Copy-Item -LiteralPath $setupSrc -Destination (Join-Root 'dist/CanMeydani-Kurulum-0.6.1.exe') -Force
 }
 $linuxSrc = Join-Root 'site/indir/can-meydani-linux-x64.tar.gz'
 if (Test-Path -LiteralPath $linuxSrc) {

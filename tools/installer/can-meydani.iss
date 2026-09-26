@@ -1,6 +1,6 @@
 ; Can Meydani Windows kurulum betigi (Inno Setup 6).
 ; Derleme: ISCC.exe tools\installer\can-meydani.iss
-#define AppVersion "0.6.0"
+#define AppVersion "0.6.1"
 #define SrcDir "..\..\apps\client\build\windows\x64\runner\Release"
 
 [Setup]
@@ -13,7 +13,7 @@ AppSupportURL=https://canmeydani.com.tr/
 DefaultDirName={autopf}\Can Meydani
 DefaultGroupName=Can Meydanı
 OutputDir=..\..\dist
-OutputBaseFilename=CanMeydani-Kurulum-0.6.0
+OutputBaseFilename=CanMeydani-Kurulum-0.6.1
 Compression=lzma2/max
 SolidCompression=yes
 ArchitecturesAllowed=x64compatible

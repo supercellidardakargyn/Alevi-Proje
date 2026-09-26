@@ -55053,7 +55053,7 @@ m.push(A.eY(A.bi(A.b([new A.hv(B.j4,"G\xfcvenlik merkezi","Engelleme, bildirim v
 m.push(B.cf)
 m.push(A.aUy(B.a5m,new A.aKX(s,a),A.b_x(r,r,r,r,r,r,r,r,r,B.eA,r,B.Ze,r,r,new A.cA(A.cd(16),B.y),B.Fy,r,r,r,r)))
 m.push(B.b0)
-m.push(A.cG(A.a1("Can Meydan\u0131 \xb7 v0.6.0",r,r,r,A.bg(r,r,$.bC,r,r,r,r,r,r,r,r,12,r,r,r,r,r,!0,r,r,r,r,r,r,r,r),r,r,r),r,r))
+m.push(A.cG(A.a1("Can Meydan\u0131 \xb7 v0.6.1",r,r,r,A.bg(r,r,$.bC,r,r,r,r,r,r,r,r,12,r,r,r,r,r,!0,r,r,r,r,r,r,r,r),r,r,r),r,r))
 return A.f5(!0,A.pm(m,B.qy,B.Z),!0,!1,B.U,!0,!0)},
 asK(a){A.rd(null,new A.aKK(this),a,!1,null,!0,!1,t.H)},
 asJ(a){A.rd(null,new A.aKJ(this,a),a,!1,null,!0,!1,t.H)},

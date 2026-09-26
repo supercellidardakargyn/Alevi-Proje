@@ -1,7 +1,7 @@
 name: alevi_client
 description: Alevi topluluk ve eşleşme mobil/Windows istemcisi.
 publish_to: "none"
-version: 0.6.0+12
+version: 0.6.1+13
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
